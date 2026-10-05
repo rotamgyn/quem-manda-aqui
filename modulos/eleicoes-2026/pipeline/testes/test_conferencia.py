@@ -57,7 +57,29 @@ def test_divergencia_de_um_voto_bloqueia():
     rs[i] = replace(uf, candidatos=(c0, uf.candidatos[1]))
     with pytest.raises(ErroConferencia) as e:
         conferir(rs)
-    assert e.value.divergencias[0] == "2026 presidente GO candidato 22: municípios=400 oficial=401"
+    # agregado de UF corrompido: linha da UF e, legitimamente, a do BR (soma dos oficiais)
+    assert e.value.divergencias == [
+        "2026 presidente GO candidato 22: municípios=400 oficial=401",
+        "2026 presidente BR candidato 22: UFs=408 oficial=407",
+    ]
+
+
+def test_voto_municipal_errado_gera_uma_unica_linha():
+    rs = _cenario()
+    i = next(k for k, r in enumerate(rs) if r.municipio_tse == "1")
+    m = rs[i]
+    rs[i] = replace(m, candidatos=(replace(m.candidatos[0], votos=m.candidatos[0].votos + 1), m.candidatos[1]))
+    with pytest.raises(ErroConferencia) as e:
+        conferir(rs)
+    assert e.value.divergencias == ["2026 presidente GO candidato 22: municípios=401 oficial=400"]
+
+
+def test_rotulo_segundo_turno():
+    go = [replace(_res("GO", "1", 300, 200, cargo="governador"), turno=2)]
+    uf = replace(_soma("GO", go), turno=2, aptos=go[0].aptos + 1, abstencao=go[0].abstencao + 1)
+    with pytest.raises(ErroConferencia) as e:
+        conferir(go + [uf])
+    assert e.value.divergencias[0].startswith("2026 governador 2º turno GO aptos:")
 
 
 def test_mensagem_lista_todas_as_divergencias():

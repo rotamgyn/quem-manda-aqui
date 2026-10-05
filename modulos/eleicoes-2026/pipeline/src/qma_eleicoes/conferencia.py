@@ -46,7 +46,15 @@ def _comparar(rotulo: str, filhos: list[Resultado], oficial: Resultado, nome_som
 
 
 def conferir(resultados: list[Resultado]) -> None:
-    """Levanta ErroConferencia com todas as divergências encontradas."""
+    """Levanta ErroConferencia com todas as divergências encontradas.
+
+    Duas conferências independentes:
+    1. soma dos municípios == agregado oficial da UF (por ano, turno, cargo, UF);
+    2. só para presidente, soma dos agregados OFICIAIS das UFs (incluindo ZZ) == Brasil,
+       o que verifica que os próprios arquivos do TSE são coerentes entre si.
+    Um erro num município gera exatamente uma linha (UF). Um agregado de UF corrompido
+    gera legitimamente duas (a da UF e a do BR).
+    """
     municipios: dict[tuple, list[Resultado]] = defaultdict(list)
     ufs: dict[tuple, list[Resultado]] = defaultdict(list)
     agregados: dict[tuple, list[Resultado]] = defaultdict(list)
