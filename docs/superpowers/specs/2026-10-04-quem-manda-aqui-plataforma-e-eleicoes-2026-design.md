@@ -62,7 +62,9 @@ A plataforma deve **comportar** os módulos 2–6 (estrutura de pastas, navegaç
 - Arquivo de resultado por abrangência: `<uf|br>[<cod_municipio_tse>]-c<cargo 4 dígitos>-e<eleicao 6 dígitos>-u.json` (ex.: `br/br-c0001-e006257-u.json`, `go/go93734-c0001-e006257-u.json`).
 - Arquivo de andamento da apuração: `br/br-e006257-ab.json` (percentual de municípios/seções totalizados por UF).
 - Estrutura aninhada: `carg[] → agr[] (agremiação) → par[] (partido) → cand[]`, com `vap` (votos) e `pvap` (percentual, vírgula decimal). Campo `idg` muda a cada nova versão.
-- Codificação de texto não é UTF-8 limpo (acentos corrompidos ao ler como UTF-8) — o leitor deve tratar a codificação explicitamente.
+- Arquivos ao vivo de 2026 em **UTF-8**; CSVs do Dados Abertos 2022 em **Latin-1**, separador `;`.
+- O arquivo de configuração de municípios (`config/mun-e006257-cm.json`) traz o **código IBGE** (`cdi`) de cada município: é a fonte da tabela de-para TSE↔IBGE.
+- 5.571 municípios no Brasil (5.570 + Brasília/DF) e 186 cidades no exterior (`zz`), que contam apenas para presidente.
 - **Sem cabeçalho CORS** → acesso direto pelo navegador é inviável (confirma a arquitetura com robô intermediário).
 - Os arquivos ao vivo de 2022 **não** estão mais nesse servidor; 2022 vem só do Dados Abertos.
 - Formato de 2026 difere do formato de 2022 (`dados-simplificados/...-r.json` não existe mais).
@@ -75,17 +77,17 @@ A plataforma deve **comportar** os módulos 2–6 (estrutura de pastas, navegaç
            FONTES PÚBLICAS                  PROCESSAMENTO                  PUBLICAÇÃO
   TSE Dados Abertos 2022  ─┐
   TSE Perfil Eleitorado   ─┼─▶ Pipeline Python (GitHub Actions) ─┐
-  IBGE Censo 2022         ─┘    normaliza → analisa → JSON       ├─▶ Cloudflare R2 (JSONs) ─▶ Site estático Astro
+  IBGE Censo 2022         ─┘    normaliza → analisa → JSON       ├─▶ JSONs (no build do site; R2 só p/ ao vivo) ─▶ Site Astro
   TSE resultados ao vivo  ───▶ Robô ao vivo (Cloudflare Worker,  ─┘                            (Cloudflare Pages + CDN)
                                 cron 1 min) busca → projeta → JSON
 ```
 
 ### Unidades e responsabilidades
 
-1. **Pipeline Python** (`modulos/eleicoes-2026/pipeline/`): baixa fontes, normaliza, executa análises A, C, D, E e o resultado consolidado; gera JSONs pequenos (um por abrangência/cargo/análise). Executado sob demanda ou diariamente via GitHub Actions. Python + pandas.
+1. **Pipeline Python** (`modulos/eleicoes-2026/pipeline/`): baixa fontes, normaliza, executa análises A, C, D, E e o resultado consolidado; gera JSONs pequenos (um por abrangência/cargo/análise), versionados no repositório e lidos pelo site no build; o Cloudflare R2 é usado apenas pelo robô ao vivo. Executado sob demanda ou diariamente via GitHub Actions. Python + pandas.
 2. **Robô ao vivo** (`modulos/eleicoes-2026/robo/`): Cloudflare Worker em TypeScript, cron de 1 minuto, ativo apenas no dia do 2º turno (16h45 até apuração 100%). Lê o arquivo de andamento, baixa apenas arquivos cujo `idg` mudou, recalcula a projeção (análise B), grava JSON no R2.
 3. **Site** (`site/`): Astro, páginas estáticas geradas a partir dos JSONs; a página ao vivo busca o JSON do R2 periodicamente no navegador.
-4. **Dados comuns** (`dados-comuns/`): tabela de-para de municípios **TSE ↔ IBGE** (5.570), UFs, tabela de correspondência de partidos/federações 2022 ↔ 2026. Reutilizada pelos módulos futuros.
+4. **Dados comuns** (`dados-comuns/`): tabela de-para de municípios **TSE ↔ IBGE** (5.571, incluindo Brasília), UFs, tabela de correspondência de partidos/federações 2022 ↔ 2026. Reutilizada pelos módulos futuros.
 
 ### Estrutura de pastas
 
@@ -115,7 +117,7 @@ Adicionar um módulo novo não altera os existentes.
 
 ## 5. Análises (módulo Eleições 2026)
 
-Unidade de análise: **município** (5.570). Seção/zona eleitoral fica fora desta spec.
+Unidade de análise: **município** (5.571, incluindo Brasília; exterior entra só nos totais de presidente). Seção/zona eleitoral fica fora desta spec.
 
 ### A) Migração 2022 → 2026
 Para cada município, cargo (presidente, governador) e partido/federação: variação em pontos percentuais 2022 → 2026, troca de vencedor ("virada"). Saídas: mapa, ranking dos 50 municípios que mais mudaram (filtro por UF e porte).
@@ -146,7 +148,7 @@ Partido do governador eleito × desempenho presidencial na UF; mapa de alinhamen
 | `/eleicoes-2026` | Panorama 1º turno + principais mudanças desde 2022 |
 | `/eleicoes-2026/presidente` | Resultado, mapa de migração, ranking de mudanças |
 | `/eleicoes-2026/governador/[uf]` | 27 páginas |
-| `/eleicoes-2026/municipio/[uf]/[cidade]` | 5.570 páginas: 2022 × 2026, abstenção, perfil |
+| `/eleicoes-2026/municipio/[uf]/[cidade]` | 5.571 páginas: 2022 × 2026, abstenção, perfil |
 | `/eleicoes-2026/ao-vivo` | Projeção com faixa, % apurado, horário da atualização |
 | `/eleicoes-2026/analises/{abstencao,forcas-regionais,transferencia}` | Análises D, E, C |
 | `/metodologia`, `/fontes`, `/sobre` | Transparência |
@@ -172,7 +174,7 @@ Partido do governador eleito × desempenho presidencial na UF; mapa de alinhamen
 
 1. **Leitores de dados:** testes automáticos com arquivos reais do TSE salvos como amostras (incluindo os de 04/10/2026); falham se o formato mudar.
 2. **Conferência de totais:** totais nacional e por UF calculados pelo pipeline devem bater exatamente com os oficiais; caso contrário a publicação é bloqueada.
-3. **Tabela de-para de municípios:** 5.570 municípios ligados TSE↔IBGE; qualquer ausência gera falha.
+3. **Tabela de-para de municípios:** 5.571 municípios ligados TSE↔IBGE; qualquer ausência gera falha.
 4. **Projeção:** backtest com 2022; registrar erro por estágio; faixa calibrada.
 5. **Carga:** simulação de pico antes de 22/10.
 6. **Robô:** teste ponta a ponta reproduzindo sequência de arquivos com `idg` crescente.
