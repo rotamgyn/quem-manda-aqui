@@ -165,9 +165,9 @@ D:\politicaBrasil\
   - `@dataclass(frozen=True) VotoCandidato: numero: int, nome_urna: str, partido: str, votos: int, situacao: Literal["eleito", "2º turno", "não eleito", ""]`
   - `@dataclass(frozen=True) Resultado: ano: int, turno: int, cargo: Cargo, uf: str ("BR" ou sigla maiúscula), municipio_tse: str | None, aptos: int, comparecimento: int, abstencao: int, brancos: int, nulos: int, validos: int, pct_secoes_totalizadas: float, candidatos: tuple[VotoCandidato, ...]` (candidatos ordenados por votos desc.)
   - `Resultado.pct(candidato) -> float | None` = votos/validos×100; `None` se `validos == 0`.
-- Produces (`leitor_2026.py`): `ler_resultado_2026(dados: dict, cargo: Cargo) -> Resultado`.
+- Produces (`leitor_2026.py`): `ler_resultado_2026(dados: dict, cargo: Cargo, uf: str | None = None) -> Resultado` (`uf` obrigatório quando `tpabr == "mu"`, pois o arquivo municipal não traz a UF).
 
-Mapeamento do JSON 2026 (pinado pela verificação de 04/10/2026): `tpabr`/`cdabr` → uf/municipio (`tpabr == "br"` → `uf="BR"`; `"uf"` → `cdabr.upper()`; `"mu"` → municipio_tse = `cdabr`, uf vem do parâmetro de contexto lido do caminho — por isso a assinatura recebe também `uf: str | None = None`); `e.te` → aptos; `e.c` → comparecimento; `e.a` → abstencao; `v.vb` → brancos; `v.tvn` → nulos; `v.vv` → validos; `s.pstn` (vírgula decimal) → pct_secoes_totalizadas; candidatos em `carg[0].agr[].par[].cand[]`: `n`, `nmu`, `par.sg`, `vap`; situação: `cand.e == "s"` → `"eleito"`; `cand.st` contendo `"2º turno"` (sem diferenciar maiúsculas) → `"2º turno"`; `st` contendo `"não eleito"` → `"não eleito"`; senão `""`. `ano=2026`, `turno = int(dados["t"])`.
+Mapeamento do JSON 2026 (pinado pela verificação de 04/10/2026): `tpabr`/`cdabr` → uf/municipio (`tpabr == "br"` → `uf="BR"`; `"uf"` → `cdabr.upper()`; `"mu"` → municipio_tse = `cdabr`, uf = parâmetro `uf`); `e.te` → aptos; `e.c` → comparecimento; `e.a` → abstencao; `v.vb` → brancos; `v.tvn` → nulos; `v.vv` → validos; `s.pstn` (vírgula decimal) → pct_secoes_totalizadas; candidatos em `carg[0].agr[].par[].cand[]`: `n`, `nmu`, `par.sg`, `vap`; situação: `cand.e == "s"` → `"eleito"`; `cand.st` contendo `"2º turno"` (sem diferenciar maiúsculas) → `"2º turno"`; `st` contendo `"não eleito"` → `"não eleito"`; senão `""`. `ano=2026`, `turno = int(dados["t"])`.
 
 - [ ] **Step 1:** Testes: `test_brasil_presidente` (amostra BR: `uf == "BR"`, `aptos == 158745502`, primeiro candidato `partido == "PL"`, `votos == 56082216`); `test_municipio_goiania` (`municipio_tse == "93734"`, `uf == "GO"`); `test_soma_candidatos_igual_validos`; `test_pct_secoes_parcial` (amostra BR: `pct_secoes_totalizadas == pytest.approx(99.908061725)`; `Resultado.pct` com `validos=0` → `None`); `test_situacao_segundo_turno` (cópia da amostra de governador com `st` = `"2º turno"` e `e = "n"` no 1º colocado → `situacao == "2º turno"`, nunca `"eleito"`); `test_url_resultado_2026` (`url_resultado_2026("governador", "go", "93734")` termina em `/6259/dados/go/go93734-c0003-e006259-u.json`).
 - [ ] **Step 2:** Rodar → FAIL.
@@ -269,15 +269,15 @@ Colunas usadas (pinadas): votação — `NR_TURNO, SG_UF, CD_MUNICIPIO, CD_CARGO
 - Produces (`exportar.py`) — **contrato lido pelo site e pelos Planos 2 e 3**:
   - `comparacoes/{abr}-{cargo}.json` (`abr` = `br` ou UF minúscula; `br-governador` não existe): objeto `Comparacao` serializado (`dataclasses.asdict`; `candidatos` de cada `Resultado` ganham campo `pct`), mais `nome` da abrangência.
   - `municipios/{uf}.json`: `{"uf": "GO", "municipios": [{"tse", "ibge", "nome", "slug", "capital", "presidente": Comparacao, "governador": Comparacao}]}` — exterior vai em `municipios/zz.json` só com `presidente`.
-  - `ranking-presidente.json`: 50 municípios (UF ≠ ZZ) com maior `volatilidade`: `[{"tse", "nome", "uf", "slug", "volatilidade", "vencedor_2022", "vencedor_2026", "virou"}]`.
+  - `ranking-presidente.json`: **todos** os municípios com UF ≠ ZZ e volatilidade não nula, ordenados por `volatilidade` desc.: `[{"tse", "nome", "uf", "slug", "aptos", "volatilidade", "vencedor_2022", "vencedor_2026", "virou"}]` (`aptos` de 2026, para o filtro de porte).
   - `meta.json`: `{"gerado_em": ISO-8601 America/Sao_Paulo, "fonte_2026_dg_hg": "04/10/2026 22:30:15", "pct_secoes_br": 99.91}`.
   - JSON em UTF-8, `ensure_ascii=False`, números com no máximo 2 casas decimais nos percentuais.
 - Produces (`__main__.py`): `uv run python -m qma_eleicoes gerar [--forcar]` executa: municípios → malhas → 2022 (turno 1) → 2026 → **conferir (2022 e 2026)** → comparar → exportar. Falha de conferência termina com código 1 e não escreve nada em `dados/eleicoes-2026/` (gravar em pasta temporária e trocar no fim).
 
-- [ ] **Step 1:** Testes: `test_formato_municipio_uf` (chaves exatas acima); `test_ranking_50_ordenado_sem_exterior`; `test_falha_de_conferencia_nao_altera_dados` (pasta de saída intacta após `ErroConferencia`); `test_malhas_nome_arquivos` (com `_baixar` falso).
+- [ ] **Step 1:** Testes: `test_formato_municipio_uf` (chaves exatas acima); `test_ranking_ordenado_sem_exterior_com_aptos`; `test_falha_de_conferencia_nao_altera_dados` (pasta de saída intacta após `ErroConferencia`); `test_malhas_nome_arquivos` (com `_baixar` falso).
 - [ ] **Step 2:** Rodar → FAIL.
 - [ ] **Step 3:** Implementar.
-- [ ] **Step 4:** Rodar → PASS. Rodar de verdade `uv run python -m qma_eleicoes gerar` → termina com código 0; `dados/eleicoes-2026/municipios/` tem 28 arquivos; `ranking-presidente.json` tem 50 itens.
+- [ ] **Step 4:** Rodar → PASS. Rodar de verdade `uv run python -m qma_eleicoes gerar` → termina com código 0; `dados/eleicoes-2026/municipios/` tem 28 arquivos; `ranking-presidente.json` tem entre 5.560 e 5.571 itens.
 - [ ] **Step 5:** Commit `feat: exportação de dados e CLI do pipeline` e, separado, `dados: 1º turno 2026 × 2022` (com a pasta `dados/`).
 
 ---
@@ -312,7 +312,7 @@ Colunas usadas (pinadas): votação — `NR_TURNO, SG_UF, CD_MUNICIPIO, CD_CARGO
 
 - [ ] **Step 1:** Testes: `formato.test.ts` (`pct(47.0508) === "47,05%"`, `pct(null) === "—"`, `pp(-3.2) === "−3,2 p.p."`, `inteiro(56082216) === "56.082.216"`); `dados.test.ts` (`lerComparacao("br","presidente").partidos[0].partido` existe; `lerMunicipiosUF("go")` contém `tse === "93734"`).
 - [ ] **Step 2:** Rodar → FAIL; implementar `tipos.ts`, `dados.ts`, `formato.ts`; → PASS.
-- [ ] **Step 3:** Componentes: `TabelaComparativa` (partido, % 2022, % 2026, variação; ausente → "—" e selo "novo"/"não concorreu"); `BarrasVariacao` (barras divergentes em SVG, cores de `corDoPartido`). Páginas: panorama (resultado BR do 1º turno, 3 maiores variações, link para ranking); presidente (BR, tabela, ranking dos 50, cidades do exterior agregadas em linha "Exterior"); `governador/[uf]` (27 páginas via `getStaticPaths`; situação "vai ao 2º turno" quando `situacao === "2º turno"`). Toda página inclui `Fonte`; aviso visível quando `apuracao_completa` for falso.
+- [ ] **Step 3:** Componentes: `TabelaComparativa` (partido, % 2022, % 2026, variação; ausente → "—" e selo "novo"/"não concorreu"); `BarrasVariacao` (barras divergentes em SVG, cores de `corDoPartido`). Páginas: panorama (resultado BR do 1º turno, 3 maiores variações, link para ranking); presidente (BR, tabela, cidades do exterior agregadas em linha "Exterior", e ranking "os 50 municípios que mais mudaram" com filtros por UF e por porte — faixas de eleitores aptos: até 10 mil, 10–50 mil, 50–200 mil, acima de 200 mil — renderizado estático com os 50 nacionais e refeito no navegador por um script pequeno que lê `ranking-presidente.json` copiado para `site/public/`); `governador/[uf]` (27 páginas via `getStaticPaths`; situação "vai ao 2º turno" quando `situacao === "2º turno"`). Toda página inclui `Fonte`; aviso visível quando `apuracao_completa` for falso.
 - [ ] **Step 4:** `npm --prefix site run build` → gera `eleicoes-2026/governador/{27 UFs}/index.html`. Commit `feat: páginas de presidente, governador e panorama`.
 
 ---
@@ -338,16 +338,16 @@ Colunas usadas (pinadas): votação — `NR_TURNO, SG_UF, CD_MUNICIPIO, CD_CARGO
 ### Task 13: Páginas de município e busca
 
 **Files:**
-- Create: `site/src/pages/eleicoes-2026/municipio/[uf]/[cidade].astro`, `site/src/components/BuscaMunicipio.astro`, `site/src/lib/busca.ts`
-- Test: `site/src/lib/busca.test.ts`
+- Create: `site/src/pages/eleicoes-2026/municipio/[uf]/[cidade].astro`, `site/src/components/BuscaMunicipio.astro`, `site/src/lib/busca.ts`, `site/src/lib/frase.ts`
+- Test: `site/src/lib/busca.test.ts`, `site/src/lib/frase.test.ts`
 
 **Interfaces:**
 - Consumes: `lerMunicipiosUF` (T11), `TabelaComparativa`, `BarrasVariacao` (T11), `Mapa` (T12).
-- Produces: rota `/eleicoes-2026/municipio/{uf minúscula}/{slug}/` para os 5.571 municípios; `buscar(termo: string, indice: ItemBusca[]): ItemBusca[]` (ignora acentos e maiúsculas, prefixo de palavra tem prioridade, máximo 8 resultados); índice `site/public/busca-municipios.json` gerado no build (`[{n: nome, uf, u: url}]`).
+- Produces: rota `/eleicoes-2026/municipio/{uf minúscula}/{slug}/` para os 5.571 municípios; `buscar(termo: string, indice: ItemBusca[]): ItemBusca[]` (ignora acentos e maiúsculas, prefixo de palavra tem prioridade, máximo 8 resultados); índice `site/public/busca-municipios.json` gerado no build (`[{n: nome, uf, u: url}]`); `fraseDestaque(m: MunicipioComparado): string` em `frase.ts` — maior |`delta_pp`| do presidente ("Em Anápolis, o PL cresceu 11,5 pontos desde 2022"); sem 2022 → "Primeira eleição presidencial de {Nome}"; no máximo 120 caracteres.
 
-- [ ] **Step 1:** Testes: `test_busca_sem_acento` (`"anapolis"` encontra "ANÁPOLIS"); `test_prefixo_primeiro` (`"sao"` → "SÃO PAULO" antes de "LAGOA DE SÃO..." ); `test_maximo_8`.
+- [ ] **Step 1:** Testes: `test_busca_sem_acento` (`"anapolis"` encontra "ANÁPOLIS"); `test_prefixo_primeiro` (índice `["LAGOA DE SÃO X", "SÃO PAULO"]`, termo `"sao"` → "SÃO PAULO" primeiro); `test_maximo_8`; `test_frase_maior_variacao`; `test_frase_sem_2022`; `test_frase_cabe_em_120_caracteres`.
 - [ ] **Step 2:** Rodar → FAIL; implementar; → PASS.
-- [ ] **Step 3:** Página do município: título "Quem manda aqui em {Nome}/{UF}?", frase-destaque gerada dos dados (ex.: "Em Anápolis, o PL cresceu 11,5 pontos desde 2022" — maior |delta| do presidente; sem 2022 → "Primeira eleição presidencial de {Nome}"), seções presidente e governador (tabela + barras), comparecimento/abstenção/brancos/nulos 2022 × 2026, link para a UF, `Fonte`. Busca na home e no cabeçalho (ilha com JS mínimo, sem framework).
+- [ ] **Step 3:** Página do município: título "Quem manda aqui em {Nome}/{UF}?", `fraseDestaque` em destaque, seções presidente e governador (tabela + barras), comparecimento/abstenção/brancos/nulos 2022 × 2026, link para a UF, `Fonte`. Busca na home e no cabeçalho (ilha com JS mínimo, sem framework).
 - [ ] **Step 4:** Build → `find site/dist/eleicoes-2026/municipio -name index.html | wc -l` = **5571**; build total < 10 min. Commit `feat: páginas de município e busca`.
 
 ---
@@ -360,10 +360,10 @@ Colunas usadas (pinadas): votação — `NR_TURNO, SG_UF, CD_MUNICIPIO, CD_CARGO
 - Test: `site/src/lib/cartao.test.ts`
 
 **Interfaces:**
-- Consumes: frase-destaque (T13), tokens de cor (T10).
-- Produces: `fraseDestaque(m: MunicipioComparado): string` (movida de T13 para `cartao.ts` e reutilizada lá); PNG 1200×630 por página (home, panorama, presidente, 27 governadores, 5.571 municípios) com logo, frase-destaque e "quemmandaaqui.com.br"; fonte embarcada (arquivo `.ttf` da identidade em `site/src/assets/fontes/`).
+- Consumes: `fraseDestaque` (T13), tokens de cor (T10).
+- Produces: `cartaoPNG(titulo: string, frase: string): Promise<Uint8Array>` em `cartao.ts`; PNG 1200×630 por página (home, panorama, presidente, 27 governadores, 5.571 municípios) com logo, frase-destaque e "quemmandaaqui.com.br"; fonte embarcada (arquivo `.ttf` da identidade em `site/src/assets/fontes/`).
 
-- [ ] **Step 1:** Testes: `test_frase_maior_variacao`; `test_frase_sem_2022`; `test_frase_cabe_em_120_caracteres`.
+- [ ] **Step 1:** Testes: `test_cartao_dimensoes` (PNG decodificado tem 1200×630); `test_cartao_texto_longo_nao_quebra` (frase de 120 caracteres gera PNG sem exceção).
 - [ ] **Step 2:** Rodar → FAIL; `npm --prefix site i satori @resvg/resvg-js`; implementar; → PASS.
 - [ ] **Step 3:** Build → `site/dist/og/` contém 5.601 PNGs; total de arquivos em `site/dist` < 20.000 (limite da Cloudflare Pages). Conferir 3 cartões visualmente (Read nos PNGs).
 - [ ] **Step 4:** Commit `feat: cartões de compartilhamento`.
