@@ -1,0 +1,72 @@
+"""Leitor do JSON de resultados do TSE (formato 2026, arquivos `-u.json`)."""
+
+from __future__ import annotations
+
+from .config import CODIGO_CARGO
+from .modelo import Cargo, Resultado, Situacao, VotoCandidato
+
+
+def _num(texto: str) -> float:
+    return float(texto.replace(",", "."))
+
+
+def _situacao(cand: dict) -> Situacao:
+    if cand.get("e") == "s":
+        return "eleito"
+    st = (cand.get("st") or "").casefold()
+    if "2º turno" in st:
+        return "2º turno"
+    if "não eleito" in st:
+        return "não eleito"
+    return ""
+
+
+def ler_resultado_2026(dados: dict, cargo: Cargo, uf: str | None = None) -> Resultado:
+    """Converte o JSON do TSE em `Resultado`. `uf` é obrigatório em arquivos municipais."""
+    tpabr, cdabr = dados["tpabr"], dados["cdabr"]
+    municipio_tse = None
+    if tpabr == "br":
+        sigla = "BR"
+    elif tpabr == "uf":
+        sigla = cdabr.upper()
+    elif tpabr == "mu":
+        if not uf:
+            raise ValueError("uf é obrigatório para arquivos municipais (tpabr == 'mu')")
+        sigla, municipio_tse = uf.upper(), cdabr
+    else:
+        raise ValueError(f"abrangência desconhecida: {tpabr!r}")
+
+    codigo = str(CODIGO_CARGO[cargo])
+    bloco = next((c for c in dados["carg"] if c["cd"] == codigo), None)
+    if bloco is None:
+        raise ValueError(f"cargo {cargo!r} (cd={codigo}) ausente no arquivo")
+
+    candidatos = [
+        VotoCandidato(
+            numero=int(c["n"]),
+            nome_urna=c["nmu"],
+            partido=p["sg"],
+            votos=int(c["vap"]),
+            situacao=_situacao(c),
+        )
+        for agr in bloco["agr"]
+        for p in agr["par"]
+        for c in p["cand"]
+    ]
+    candidatos.sort(key=lambda c: c.votos, reverse=True)
+
+    return Resultado(
+        ano=2026,
+        turno=int(dados["t"]),
+        cargo=cargo,
+        uf=sigla,
+        municipio_tse=municipio_tse,
+        aptos=int(dados["e"]["te"]),
+        comparecimento=int(dados["e"]["c"]),
+        abstencao=int(dados["e"]["a"]),
+        brancos=int(dados["v"]["vb"]),
+        nulos=int(dados["v"]["tvn"]),
+        validos=int(dados["v"]["vv"]),
+        pct_secoes_totalizadas=_num(dados["s"]["pstn"]),
+        candidatos=tuple(candidatos),
+    )
