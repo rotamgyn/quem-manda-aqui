@@ -202,6 +202,16 @@ Partido do governador eleito × desempenho presidencial na UF; mapa de alinhamen
 
 ---
 
-## 10. Fora do escopo desta spec
+## 10. Decisões registradas (confirmadas pelo dono em 04/10/2026)
+
+1. **Cores neutras:** gráficos e mapas não usam cores de partidos nem verde-amarelo.
+2. **Métricas sem cookies:** Cloudflare Web Analytics (gratuito); sem banner de cookies.
+3. **Identidade visual:** logo, tipografia e paleta definidos no início da implementação e aprovados pelo dono antes do lançamento.
+
+**Pendência de marca:** busca de 04/10/2026 na base de **Patentes** do INPI sem resultados; falta a busca na base de **Marcas** (busca.inpi.gov.br → Marcas → "Quem Manda Aqui", classes 35, 38 e 41).
+
+---
+
+## 11. Fora do escopo desta spec
 
 Login, área de cliente, assinatura, API pública, newsletter, comentários; cargos de senador e deputados; análise por seção/zona; módulos 2–6.
