@@ -49,7 +49,9 @@ def _caminho_cache(url: str, cache_dir: Path) -> Path:
         h = hashlib.sha1(partes.query.encode("utf-8")).hexdigest()[:10]
         base, ext = os.path.splitext(nome)
         nome = f"{base}__{h}{ext}"
-    return cache_dir.joinpath(host, *segmentos, nome.rstrip(". ") or "index")
+    # Sufixo fixo: o arquivo é sempre folha e nunca colide com um diretório
+    # de outra URL (ex.: /a e /a/b).
+    return cache_dir.joinpath(host, *segmentos, (nome.rstrip(". ") or "index") + ".dados")
 
 
 def _aguardar_vez(host: str, max_por_segundo: float, relogio, dormir) -> None:

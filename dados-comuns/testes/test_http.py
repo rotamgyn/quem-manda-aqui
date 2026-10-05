@@ -134,3 +134,26 @@ def test_envia_user_agent_descritivo(tmp_path, relogio):
     http_cliente = http._novo_cliente(httpx.MockTransport(h))
     baixar("https://exemplo.gov.br/ua", **kw(relogio, tmp_path, http_cliente))
     assert vistos == ["QuemMandaAqui/0.1 (+https://quemmandaaqui.com.br)"]
+
+
+@pytest.mark.parametrize("ordem", [("a", "a/b"), ("a/b", "a")])
+def test_url_prefixo_de_outra_nao_colide(tmp_path, relogio, ordem):
+    c, chamadas = cliente(lambda r: httpx.Response(200, content=r.url.path.encode()))
+    for caminho in ordem:
+        p = baixar(f"https://exemplo.gov.br/{caminho}", **kw(relogio, tmp_path, c))
+        assert p.read_bytes() == f"/{caminho}".encode()
+    assert len(chamadas) == 2
+
+
+def test_falha_no_meio_do_stream_nao_deixa_parcial(tmp_path, relogio):
+    class Quebrado(httpx.SyncByteStream):
+        def __iter__(self):
+            yield b"abc"
+            raise httpx.ReadError("cortou")
+
+    c, chamadas = cliente(lambda r: httpx.Response(200, stream=Quebrado()))
+    with pytest.raises(ErroDownload) as e:
+        baixar("https://exemplo.gov.br/grande.zip", max_por_segundo=1000, **kw(relogio, tmp_path, c))
+    assert e.value.status is None
+    assert len(chamadas) == 4
+    assert not [p for p in tmp_path.rglob("*") if p.is_file()]
