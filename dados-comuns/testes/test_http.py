@@ -157,3 +157,24 @@ def test_falha_no_meio_do_stream_nao_deixa_parcial(tmp_path, relogio):
     assert e.value.status is None
     assert len(chamadas) == 4
     assert not [p for p in tmp_path.rglob("*") if p.is_file()]
+
+
+def test_cliente_padrao_usa_truststore():
+    import truststore
+
+    c = http._novo_cliente()
+    try:
+        ctx = c._transport._pool._ssl_context
+        assert isinstance(ctx, truststore.SSLContext)
+    finally:
+        c.close()
+
+
+@pytest.mark.rede
+def test_tls_tse_real(tmp_path):
+    dados = baixar_json(
+        "https://resultados.tse.jus.br/oficial/comum/config/ele-c.json",
+        cache_dir=tmp_path,
+        forcar=True,
+    )
+    assert isinstance(dados, (dict, list))

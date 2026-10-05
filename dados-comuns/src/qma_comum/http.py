@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 import re
+import ssl
 import time
 from collections.abc import Callable
 from pathlib import Path
@@ -13,6 +14,7 @@ from typing import Any
 from urllib.parse import urlsplit
 
 import httpx
+import truststore
 
 USER_AGENT = "QuemMandaAqui/0.1 (+https://quemmandaaqui.com.br)"
 ESPERAS_RETENTATIVA = (1, 2, 4)  # segundos; 1 tentativa + 3 retentativas
@@ -32,7 +34,11 @@ class ErroDownload(Exception):
 
 
 def _novo_cliente(transport: httpx.BaseTransport | None = None) -> httpx.Client:
+    # Certificados do sistema operacional: o TSE não envia o certificado
+    # intermediário e o bundle do certifi não monta a cadeia.
+    contexto_ssl = truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
     return httpx.Client(
+        verify=contexto_ssl,
         headers={"User-Agent": USER_AGENT},
         follow_redirects=True,
         timeout=httpx.Timeout(60.0, connect=15.0),

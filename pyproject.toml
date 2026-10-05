@@ -3,7 +3,11 @@ name = "quem-manda-aqui"
 version = "0.1.0"
 description = "Quem Manda Aqui: dados de política brasileira"
 requires-python = ">=3.12"
-dependencies = ["pandas", "httpx"]
+dependencies = [
+    "pandas",
+    "httpx",
+    "truststore>=0.10.4",
+]
 
 [dependency-groups]
 dev = ["pytest"]
