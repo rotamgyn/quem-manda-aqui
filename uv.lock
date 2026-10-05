@@ -294,6 +294,7 @@ dependencies = [
     { name = "httpx" },
     { name = "pandas" },
     { name = "truststore" },
+    { name = "tzdata" },
 ]
 
 [package.dev-dependencies]
@@ -306,6 +307,7 @@ requires-dist = [
     { name = "httpx" },
     { name = "pandas" },
     { name = "truststore", specifier = ">=0.10.4" },
+    { name = "tzdata" },
 ]
 
 [package.metadata.requires-dev]
