@@ -207,6 +207,7 @@ Partido do governador eleito × desempenho presidencial na UF; mapa de alinhamen
 1. **Cores neutras:** gráficos e mapas não usam cores de partidos nem verde-amarelo.
 2. **Métricas sem cookies:** Cloudflare Web Analytics (gratuito); sem banner de cookies.
 3. **Identidade visual:** logo, tipografia e paleta definidos no início da implementação e aprovados pelo dono antes do lançamento.
+4. **Marca mantida: "Quem Manda Aqui".** "Animal Político" foi avaliado e descartado (nome já usado por grande veículo de jornalismo político mexicano, animalpolitico.com; baixa exclusividade em buscas). A frase de Aristóteles entra como **manifesto** na página `/sobre`: *"O ser humano é um animal político. Aqui, você descobre quem manda — com dados."*
 
 **Pendência de marca:** busca de 04/10/2026 na base de **Patentes** do INPI sem resultados; falta a busca na base de **Marcas** (busca.inpi.gov.br → Marcas → "Quem Manda Aqui", classes 35, 38 e 41).
 
