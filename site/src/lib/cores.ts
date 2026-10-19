@@ -1,10 +1,8 @@
-// Cores dos partidos: atribuídas pela ORDEM de votação nacional no 1º turno de 2026
-// (presidente, depois governador), nunca pela identidade do partido.
+// Cores dos partidos: atribuídas pela POSIÇÃO dentro de cada gráfico, cartão ou mapa
+// (Rulings 12 e 15), nunca pela identidade do partido nem por uma ordem nacional.
 // Os valores vêm dos tokens aprovados (styles/tokens.css); aqui os hex servem aos testes
-// e à geração de imagens. As funções públicas devolvem referências CSS (var(--sN)),
-// que respeitam o modo escuro.
-// Módulo puro (seguro para o navegador): a leitura dos arquivos fica em ordemPartidos.ts.
-
+// e à geração de imagens. As funções que devolvem referências CSS (var(--sN)) respeitam o
+// modo escuro. Módulo puro (seguro para o navegador).
 export const PALETA_CLARA = [
   '#e86518', '#703dc6', '#952342', '#245fd4', '#35b4a7', '#0e5794', '#983e1b', '#45aade',
 ] as const;
@@ -22,40 +20,35 @@ export type Tema = 'claro' | 'escuro';
 
 const norm = (p: string) => p.trim().toUpperCase();
 
-export function criarCores(ordem: string[]) {
-  const posicao = new Map<string, number>();
-  for (const p of ordem) {
+type PctPartido = { partido: string; pct_2026: number | null; pct_2022: number | null };
+
+/** Ordem de um gráfico: maior % em 2026, depois maior % em 2022 (ausente conta como menor); desempate alfabético. */
+export function ordemPorPosicao(linhas: PctPartido[]): string[] {
+  const v = (x: number | null) => (x === null ? -1 : x);
+  return [...linhas]
+    .sort((a, b) => v(b.pct_2026) - v(a.pct_2026) || v(b.pct_2022) - v(a.pct_2022) || a.partido.localeCompare(b.partido, 'pt-BR'))
+    .map((l) => l.partido);
+}
+
+/**
+ * Cores de UM gráfico ou cartão: os 8 primeiros por `ordemPorPosicao` recebem as 8 cores, o resto fica
+ * cinza. Sem tema: referências CSS (var(--sN), var(--outros)); com tema: os hex correspondentes.
+ */
+export function coresPorPosicao(linhas: PctPartido[], tema?: Tema): Record<string, string> {
+  const paleta = tema === 'escuro' ? PALETA_ESCURA : PALETA_CLARA;
+  const outros = tema === undefined ? OUTROS : tema === 'claro' ? OUTROS_CLARO : OUTROS_ESCURO;
+  const cores: Record<string, string> = {};
+  ordemPorPosicao(linhas).forEach((p, i) => {
     const k = norm(p);
-    if (!posicao.has(k) && posicao.size < PALETA_CLARA.length) posicao.set(k, posicao.size);
-  }
-  const indice = (p: string) => posicao.get(norm(p));
-  return {
-    corDoPartido(partido: string): string {
-      const i = indice(partido);
-      return i === undefined ? OUTROS : `var(--s${i + 1})`;
-    },
-    corDoPartidoMapa(partido: string): string {
-      const i = indice(partido);
-      return i === undefined || i >= CORES_NO_MAPA ? OUTROS : `var(--s${i + 1})`;
-    },
-    corHex(partido: string, tema: Tema = 'claro'): string {
-      const i = indice(partido);
-      if (i === undefined) return tema === 'claro' ? OUTROS_CLARO : OUTROS_ESCURO;
-      return (tema === 'claro' ? PALETA_CLARA : PALETA_ESCURA)[i];
-    },
-  };
+    if (k in cores) return;
+    cores[k] = i < paleta.length ? (tema === undefined ? `var(--s${i + 1})` : paleta[i]!) : outros;
+  });
+  return cores;
 }
 
-let padrao = criarCores([]);
-
-/** Define a ordem nacional usada pelas funções abaixo (chamada por ordemPartidos.ts no build). */
-export function definirOrdem(ordem: string[]): void {
-  padrao = criarCores(ordem);
-}
-
-export const corDoPartido = (partido: string): string => padrao.corDoPartido(partido);
-export const corDoPartidoMapa = (partido: string): string => padrao.corDoPartidoMapa(partido);
-export const corHex = (partido: string, tema: Tema = 'claro'): string => padrao.corHex(partido, tema);
+/** Cor de um partido num conjunto montado por `coresPorPosicao` (ou `coresDoMapa`); ausente → cinza. */
+export const corEm = (cores: Record<string, string>, partido: string | null): string =>
+  (partido && cores[norm(partido)]) || OUTROS;
 
 /**
  * Cores de UM mapa: os 3 partidos que mais venceram nas regiões mostradas (desempate alfabético)
@@ -71,5 +64,4 @@ export function coresDoMapa(vencedores: (string | null)[]): Record<string, strin
 }
 
 /** Cor de um partido num mapa montado com `coresDoMapa`. */
-export const corNoMapa = (cores: Record<string, string>, partido: string | null): string =>
-  (partido && cores[norm(partido)]) || OUTROS;
+export const corNoMapa = corEm;

@@ -5,6 +5,7 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import satori from 'satori';
 import { Resvg } from '@resvg/resvg-js';
+import { coresPorPosicao, ordemPorPosicao, PALETA_CLARA } from './cores';
 import { pct } from './formato';
 import type { LinhaPartido } from './tipos';
 
@@ -18,13 +19,18 @@ const TINTA_2 = '#4a5059';
 const TINTA_3 = '#636973';
 const LINHA = '#d5d9df';
 
-/** Os 3 partidos mais votados em 2026, com a cor dada por `corDe` (empates mantêm a ordem de entrada). */
-export function escolherBarras(partidos: LinhaPartido[], corDe: (partido: string) => string): BarraCartao[] {
-  return partidos
-    .filter((l) => l.pct_2026 !== null)
-    .sort((a, b) => (b.pct_2026 as number) - (a.pct_2026 as number))
-    .slice(0, 3)
-    .map((l) => ({ partido: l.partido, cor: corDe(l.partido), pct2026: l.pct_2026, pct2022: l.pct_2022 }));
+/**
+ * Os 3 partidos mais votados em 2026 (empate: maior % em 2022), com as 3 primeiras cores claras da
+ * paleta por posição DENTRO do cartão (Ruling 15): o 1º do cartão nunca fica cinza.
+ */
+export function escolherBarras(partidos: LinhaPartido[]): BarraCartao[] {
+  const comVoto = partidos.filter((l) => l.pct_2026 !== null);
+  const topo = ordemPorPosicao(comVoto).slice(0, 3);
+  const cores = coresPorPosicao(comVoto.filter((l) => topo.includes(l.partido)), 'claro');
+  return topo.map((p) => {
+    const l = comVoto.find((x) => x.partido === p)!;
+    return { partido: p, cor: cores[p.trim().toUpperCase()] ?? PALETA_CLARA[0], pct2026: l.pct_2026, pct2022: l.pct_2022 };
+  });
 }
 
 /** Texto sob as barras de 2022: município sem resultado em 2022 x partido que não disputou. */

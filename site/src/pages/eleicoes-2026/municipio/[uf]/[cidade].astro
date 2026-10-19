@@ -4,7 +4,6 @@ import Fonte from '../../../../components/Fonte.astro';
 import BarrasComparativas from '../../../../components/BarrasComparativas.astro';
 import ResultadoPrimeiroTurno from '../../../../components/ResultadoPrimeiroTurno.astro';
 import { UFS, lerMetaObrigatoria, lerMunicipiosUF } from '../../../../lib/dados';
-import { carregarOrdemNacional } from '../../../../lib/ordemPartidos';
 import { urlOg } from '../../../../lib/cartao';
 import { fraseDestaque } from '../../../../lib/frase';
 import { inteiro, nomeProprio, pct, pctSecoes } from '../../../../lib/formato';
@@ -18,7 +17,6 @@ export function getStaticPaths() {
   );
 }
 
-carregarOrdemNacional();
 const { m } = Astro.props as { m: MunicipioComparado };
 const uf = Astro.params.uf!.toUpperCase();
 const ufMin = uf.toLowerCase();

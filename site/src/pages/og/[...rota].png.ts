@@ -1,8 +1,6 @@
 // Um cartão PNG 1200x630 por página: home, panorama, presidente, 27 governadores e 5.571 municípios.
 import type { APIRoute } from 'astro';
 import { UFS, lerComparacao, lerMunicipiosUF } from '../../lib/dados';
-import { carregarOrdemNacional } from '../../lib/ordemPartidos';
-import { corHex } from '../../lib/cores';
 import { cartaoPNG, escolherBarras } from '../../lib/cartao';
 import { fraseDestaque } from '../../lib/frase';
 import { nomeProprio, nomeUF } from '../../lib/formato';
@@ -11,7 +9,6 @@ import type { LinhaPartido } from '../../lib/tipos';
 type Props = { titulo: string; frase: string; partidos: LinhaPartido[]; sem2022: boolean };
 
 export function getStaticPaths() {
-  carregarOrdemNacional();
   const br = lerComparacao('br', 'presidente').partidos;
   const rotas: { params: { rota: string }; props: Props }[] = [
     { params: { rota: 'home' }, props: { titulo: 'Quem manda aqui', frase: 'Digite sua cidade e veja em quem ela votou em 2026, e o que mudou desde 2022.', partidos: br, sem2022: false } },
@@ -35,8 +32,7 @@ export function getStaticPaths() {
 }
 
 export const GET: APIRoute = async ({ props }) => {
-  carregarOrdemNacional();
   const { titulo, frase, partidos, sem2022 } = props as Props;
-  const png = await cartaoPNG(titulo, frase, escolherBarras([...partidos], (p) => corHex(p, 'claro')), sem2022);
+  const png = await cartaoPNG(titulo, frase, escolherBarras([...partidos]), sem2022);
   return new Response(png as BodyInit, { headers: { 'Content-Type': 'image/png' } });
 };

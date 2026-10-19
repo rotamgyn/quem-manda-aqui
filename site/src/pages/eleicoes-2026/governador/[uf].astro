@@ -5,7 +5,6 @@ import ResultadoPrimeiroTurno from '../../../components/ResultadoPrimeiroTurno.a
 import BarrasComparativas from '../../../components/BarrasComparativas.astro';
 import Mapa from '../../../components/Mapa.astro';
 import { UFS, lerComparacao, lerMetaObrigatoria, lerMunicipiosUF } from '../../../lib/dados';
-import { carregarOrdemNacional } from '../../../lib/ordemPartidos';
 import { urlOg } from '../../../lib/cartao';
 import { nomeUF } from '../../../lib/formato';
 import { coresDoMapa, corNoMapa } from '../../../lib/cores';
@@ -16,7 +15,6 @@ export function getStaticPaths() {
   return UFS.map((uf) => ({ params: { uf: uf.toLowerCase() } }));
 }
 
-carregarOrdemNacional();
 const { uf } = Astro.params;
 const meta = lerMetaObrigatoria();
 const c = lerComparacao(uf!, 'governador');

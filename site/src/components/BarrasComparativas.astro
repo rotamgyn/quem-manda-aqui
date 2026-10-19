@@ -1,5 +1,5 @@
 ---
-import { corDoPartido } from '../lib/cores';
+import { corEm, coresPorPosicao } from '../lib/cores';
 import { pct, pp } from '../lib/formato';
 import { normalizar } from '../lib/busca';
 import type { LinhaPartido } from '../lib/tipos';
@@ -17,7 +17,8 @@ interface Props {
   anulados2026?: string[];
 }
 const { linhas, titulo, legenda, max, anulados2026 = [] } = Astro.props;
-// Precisa de carregarOrdemNacional() no frontmatter da página que usa este componente.
+// Cores por posição DENTRO deste gráfico (Ruling 15); a tabela alternativa usa as mesmas.
+const cores = coresPorPosicao(linhas);
 
 const maiorPct = (l: LinhaPartido) => Math.max(l.pct_2026 ?? 0, l.pct_2022 ?? 0);
 const itens = max ? [...linhas].sort((a, b) => maiorPct(b) - maiorPct(a)).slice(0, max) : linhas;
@@ -54,7 +55,7 @@ const resumo = itens
       {[1, 2, 3].map((i) => <i style={`left:${(i / 3) * 100}%`}></i>)}
     </div>
     {itens.map((l) => (
-      <div class="linha-p" style={`--c:${corDoPartido(l.partido)}`}>
+      <div class="linha-p" style={`--c:${corEm(cores, l.partido)}`}>
         <div class="nome"><i></i>{l.partido}<small>{diferenca(l)}</small></div>
         {[{ ano: 2026, v: l.pct_2026 }, { ano: 2022, v: l.pct_2022 }].map(({ ano, v }) => (
           <div class="trilho">
@@ -74,7 +75,7 @@ const resumo = itens
     <button type="button" class="ver-tabela" aria-expanded="true" aria-controls={idTabela} hidden>Ver como tabela</button>
   </div>
   <div class="tabela-alt" id={idTabela}>
-    <TabelaComparativa linhas={linhas} legenda={legenda} anulados2026={anulados2026} />
+    <TabelaComparativa linhas={linhas} legenda={legenda} anulados2026={anulados2026} cores={cores} />
   </div>
 </div>
 )}

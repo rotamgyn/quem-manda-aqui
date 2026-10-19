@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest';
 import { linhasParticipacao } from './participacao';
 import type { Resultado } from './tipos';
 
-const r = (o: Partial<Resultado>): Resultado => ({ ano: 2026, turno: 1, cargo: 'presidente', uf: 'GO', municipio_tse: '1', aptos: 1000, comparecimento: 800, abstencao: 200, brancos: 40, nulos: 80, validos: 680, pct_secoes_totalizadas: 100, candidatos: [], ...o });
+const r = (o: Partial<Resultado>): Resultado => ({ ano: 2026, turno: 1, cargo: 'presidente', uf: 'GO', municipio_tse: '1', aptos: 1000, comparecimento: 800, abstencao: 200, brancos: 40, nulos: 80, validos: 680, pct_secoes_totalizadas: 100, candidatos: [], anulados: [], votos_anulados: 0, ...o });
 
 describe('linhasParticipacao', () => {
   test('percentuais: abstenção sobre aptos, brancos e nulos sobre comparecimento', () => {

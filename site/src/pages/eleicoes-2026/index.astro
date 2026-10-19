@@ -2,12 +2,10 @@
 import Layout from '../../components/Layout.astro';
 import Fonte from '../../components/Fonte.astro';
 import { UFS, lerComparacao, lerMetaObrigatoria } from '../../lib/dados';
-import { carregarOrdemNacional } from '../../lib/ordemPartidos';
 import { urlOg } from '../../lib/cartao';
-import { corDoPartido } from '../../lib/cores';
+import { corEm, coresPorPosicao } from '../../lib/cores';
 import { nomeUF, pct, pctSecoes, pp, rotuloSituacao } from '../../lib/formato';
 
-carregarOrdemNacional();
 const meta = lerMetaObrigatoria();
 const br = lerComparacao('br', 'presidente');
 const destaque = br.r2026?.candidatos.slice(0, 2) ?? [];
@@ -15,6 +13,9 @@ const maiores = br.partidos
   .filter((l) => l.delta_pp !== null)
   .sort((a, b) => Math.abs(b.delta_pp as number) - Math.abs(a.delta_pp as number))
   .slice(0, 3);
+// Cores por posição dentro de cada lista (Ruling 15).
+const coresDestaque = coresPorPosicao(br.partidos.filter((l) => destaque.some((c) => c.partido === l.partido)));
+const coresMaiores = coresPorPosicao(maiores);
 const estados = UFS.map((uf) => ({ uf, nome: nomeUF(lerComparacao(uf, 'governador').nome ?? uf) }));
 ---
 <Layout
@@ -33,7 +34,7 @@ const estados = UFS.map((uf) => ({ uf, nome: nomeUF(lerComparacao(uf, 'governado
     <ul class="cartoes">
       {destaque.map((c) => (
         <li class="cartao">
-          <i class="cor" style={`background:${corDoPartido(c.partido)}`} aria-hidden="true"></i>
+          <i class="cor" style={`background:${corEm(coresDestaque, c.partido)}`} aria-hidden="true"></i>
           <b>{c.nome_urna}</b>
           <span>{c.partido}</span>
           <strong>{pct(c.pct)}</strong>
@@ -46,7 +47,7 @@ const estados = UFS.map((uf) => ({ uf, nome: nomeUF(lerComparacao(uf, 'governado
     <h2>Os três partidos que mais mudaram</h2>
     <ul class="mudancas">
       {maiores.map((l) => (
-        <li><i class="cor" style={`background:${corDoPartido(l.partido)}`} aria-hidden="true"></i><b>{l.partido}</b>: {pct(l.pct_2022)} em 2022, {pct(l.pct_2026)} em 2026 ({pp(l.delta_pp)})</li>
+        <li><i class="cor" style={`background:${corEm(coresMaiores, l.partido)}`} aria-hidden="true"></i><b>{l.partido}</b>: {pct(l.pct_2022)} em 2022, {pct(l.pct_2026)} em 2026 ({pp(l.delta_pp)})</li>
       ))}
     </ul>
 

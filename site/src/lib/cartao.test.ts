@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { arvore, cartaoPNG, escolherBarras, legenda, rotulo2022 } from './cartao';
+import { OUTROS_CLARO, PALETA_CLARA } from './cores';
 import type { LinhaPartido } from './tipos';
 
 // Cabeçalho PNG: assinatura de 8 bytes, depois o bloco IHDR (largura e altura em 16 e 20).
@@ -61,10 +62,17 @@ describe('rótulos e legenda', () => {
 });
 
 describe('escolherBarras', () => {
-  const l = (partido: string, pct_2026: number | null): LinhaPartido => ({ partido, pct_2026, pct_2022: null, delta_pp: null });
-  it('pega os 3 mais votados em 2026, ignora sem voto e aplica a cor', () => {
-    const r = escolherBarras([l('A', 5), l('B', null), l('C', 40), l('D', 30), l('E', 20)], (p) => `#${p}`);
+  const l = (partido: string, pct_2026: number | null, pct_2022: number | null = null): LinhaPartido =>
+    ({ partido, pct_2026, pct_2022, delta_pp: null, siglas_2022: [] });
+  it('pega os 3 mais votados em 2026, ignora sem voto e colore por posição no cartão', () => {
+    const r = escolherBarras([l('A', 5), l('B', null), l('C', 40), l('D', 30), l('E', 20)]);
     expect(r.map((b) => b.partido)).toEqual(['C', 'D', 'E']);
-    expect(r[0]).toMatchObject({ cor: '#C', pct2026: 40 });
+    expect(r.map((b) => b.cor)).toEqual([PALETA_CLARA[0], PALETA_CLARA[1], PALETA_CLARA[2]]);
+    expect(r[0]).toMatchObject({ pct2026: 40 });
+  });
+  it('o 1º do cartão sempre tem cor (nunca o cinza de "outros")', () => {
+    const r = escolherBarras([l('REPUBLICANOS', 55, 40), l('PT', 30, 50)]);
+    expect(r[0]).toMatchObject({ partido: 'REPUBLICANOS', cor: PALETA_CLARA[0] });
+    expect(r.every((b) => b.cor !== OUTROS_CLARO)).toBe(true);
   });
 });

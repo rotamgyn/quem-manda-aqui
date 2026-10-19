@@ -6,13 +6,11 @@ import BarrasComparativas from '../../components/BarrasComparativas.astro';
 import Mapa from '../../components/Mapa.astro';
 import RankingMudanca from '../../components/RankingMudanca.astro';
 import { UFS, lerComparacao, lerMetaObrigatoria, lerRanking } from '../../lib/dados';
-import { carregarOrdemNacional } from '../../lib/ordemPartidos';
 import { urlOg } from '../../lib/cartao';
 import { inteiro, nomeUF, pct } from '../../lib/formato';
 import { coresDoMapa, corNoMapa } from '../../lib/cores';
 import { montarLegenda, rotuloVencedor } from '../../lib/mapa';
 
-carregarOrdemNacional();
 const meta = lerMetaObrigatoria();
 const br = lerComparacao('br', 'presidente');
 const exterior = lerComparacao('zz', 'presidente');

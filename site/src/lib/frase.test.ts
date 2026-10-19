@@ -3,7 +3,7 @@ import { fraseDestaque } from './frase';
 import type { Comparacao, LinhaPartido, MunicipioComparado } from './tipos';
 
 const linha = (partido: string, a: number | null, b: number | null): LinhaPartido => ({
-  partido, pct_2022: a, pct_2026: b, delta_pp: a === null || b === null ? null : Math.round((b - a) * 100) / 100,
+  partido, pct_2022: a, pct_2026: b, delta_pp: a === null || b === null ? null : Math.round((b - a) * 100) / 100, siglas_2022: a === null ? [] : [partido],
 });
 const mun = (nome: string, partidos: LinhaPartido[], com2022 = true): MunicipioComparado => ({
   tse: '1', ibge: '1', nome, slug: 'x', capital: false,
