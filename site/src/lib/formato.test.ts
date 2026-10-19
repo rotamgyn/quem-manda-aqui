@@ -11,6 +11,9 @@ describe('formato', () => {
     expect(pp(-3.2)).toBe('−3,2 p.p.');
     expect(pp(11.5)).toBe('+11,5 p.p.');
     expect(pp(0)).toBe('0,0 p.p.');
+    expect(pp(-0.04)).toBe('0,0 p.p.'); // nunca "−0,0"
+    expect(pp(0.049)).toBe('0,0 p.p.'); // nunca "+0,0"
+    expect(pp(-0.06)).toBe('−0,1 p.p.');
     expect(pp(null)).toBe('—');
   });
   test('inteiro usa ponto como separador de milhar', () => {

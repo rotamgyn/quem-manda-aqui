@@ -14,8 +14,9 @@ export function pct(n: number | null): string {
 /** 11.5 → "+11,5 p.p."; -3.2 → "−3,2 p.p."; null → "—". */
 export function pp(n: number | null): string {
   if (n === null) return '—';
-  const sinal = n > 0 ? '+' : n < 0 ? MENOS : '';
-  return `${sinal}${fmt(Math.abs(n), 1)} p.p.`;
+  const r = Math.round(Math.abs(n) * 10) / 10; // arredonda antes do sinal: nunca "−0,0"/"+0,0"
+  const sinal = r === 0 ? '' : n > 0 ? '+' : MENOS;
+  return `${sinal}${fmt(r, 1)} p.p.`;
 }
 
 /** 56082216 → "56.082.216". */
