@@ -70,7 +70,7 @@ const legenda = montarLegenda(vencedores, (p) => corNoMapa(paleta, p));
     </div>
 
     <h2>O que mudou desde 2022</h2>
-    <BarrasComparativas linhas={c.partidos} titulo={`Governador de ${nome}, 1º turno: 2026 contra 2022`} legenda={`Porcentagem dos votos válidos por partido para governador em ${nome}, 2022 e 2026`} />
+    <BarrasComparativas linhas={c.partidos} anulados2026={c.r2026?.anulados.map((a) => a.partido)} titulo={`Governador de ${nome}, 1º turno: 2026 contra 2022`} legenda={`Porcentagem dos votos válidos por partido para governador em ${nome}, 2022 e 2026`} />
     {c.volatilidade !== null && <p>Volatilidade de Pedersen no estado: <b>{c.volatilidade.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</b> (de 0 a 100).</p>}
 
     <Fonte fonte={`TSE, dados abertos de 2022 e 2026 (arquivo de 2026 gerado em ${meta.fonte_2026_dg_hg})`} atualizadoEm={meta.gerado_em} />

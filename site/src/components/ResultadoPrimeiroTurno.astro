@@ -1,9 +1,10 @@
 ---
-import { inteiro, pct, pctSecoes, rotuloSituacao } from '../lib/formato';
+import { inteiro, notaAnulados, pct, pctSecoes, rotuloSituacao } from '../lib/formato';
 import type { Resultado } from '../lib/tipos';
 
 interface Props { resultado: Resultado | null; apuracaoCompleta: boolean; legenda: string }
 const { resultado, apuracaoCompleta, legenda } = Astro.props;
+const anulados = resultado ? notaAnulados(resultado) : null;
 ---
 {!apuracaoCompleta && resultado && (
   <p class="aviso" role="status">
@@ -35,6 +36,7 @@ const { resultado, apuracaoCompleta, legenda } = Astro.props;
       Votos válidos: {inteiro(resultado.validos)} · brancos: {inteiro(resultado.brancos)} · nulos: {inteiro(resultado.nulos)} ·
       abstenção: {inteiro(resultado.abstencao)} de {inteiro(resultado.aptos)} eleitores aptos.
     </p>
+    {anulados && <p class="nota anulados">{anulados} <a href="/metodologia#anulados">Por que nossos percentuais podem diferir do app do TSE</a>.</p>}
   </>
 ) : (
   <p>Resultado de 2026 ainda indisponível.</p>

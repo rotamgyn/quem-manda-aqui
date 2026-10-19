@@ -3,8 +3,13 @@ import { corDoPartido } from '../lib/cores';
 import { pct, pp } from '../lib/formato';
 import type { LinhaPartido } from '../lib/tipos';
 
-interface Props { linhas: LinhaPartido[]; legenda: string }
-const { linhas, legenda } = Astro.props;
+interface Props {
+  linhas: LinhaPartido[];
+  legenda: string;
+  /** Partidos cujos candidatos tiveram os votos de 2026 anulados (inclusive sub judice). */
+  anulados2026?: string[];
+}
+const { linhas, legenda, anulados2026 = [] } = Astro.props;
 // Precisa de carregarOrdemNacional() no frontmatter da página que usa este componente.
 ---
 <div class="tabela-rolagem">
@@ -18,7 +23,7 @@ const { linhas, legenda } = Astro.props;
         <tr>
           <th scope="row"><i class="cor" style={`background:${corDoPartido(l.partido)}`} aria-hidden="true"></i>{l.partido}</th>
           <td class="num">{l.pct_2022 === null ? <><span>—</span> <span class="selo">não disputou em 2022</span></> : pct(l.pct_2022)}</td>
-          <td class="num">{l.pct_2026 === null ? <><span>—</span> <span class="selo">não disputou em 2026</span></> : pct(l.pct_2026)}</td>
+          <td class="num">{l.pct_2026 === null ? <><span>—</span> <span class="selo">{anulados2026.includes(l.partido) ? 'votos anulados em 2026' : 'não disputou em 2026'}</span></> : pct(l.pct_2026)}</td>
           <td class="num">{pp(l.delta_pp)}</td>
         </tr>
       ))}

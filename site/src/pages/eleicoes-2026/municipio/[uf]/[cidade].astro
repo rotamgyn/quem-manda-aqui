@@ -71,6 +71,7 @@ const semResultado2022 = !pres.r2022;
         ) : (
           <BarrasComparativas
             linhas={pres.partidos}
+            anulados2026={pres.r2026.anulados.map((a) => a.partido)}
             max={6}
             titulo={`Presidente em ${nome}, 1º turno: 2026 contra 2022`}
             legenda={`Porcentagem dos votos válidos por partido para presidente em ${nome}/${uf}, 2022 e 2026`}
@@ -100,6 +101,7 @@ const semResultado2022 = !pres.r2022;
             ) : (
               <BarrasComparativas
                 linhas={gov.partidos}
+                anulados2026={gov.r2026.anulados.map((a) => a.partido)}
                 max={6}
                 titulo={`Governador em ${nome}, 1º turno: 2026 contra 2022`}
                 legenda={`Porcentagem dos votos válidos por partido para governador em ${nome}/${uf}, 2022 e 2026`}

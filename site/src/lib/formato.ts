@@ -1,5 +1,5 @@
 // Formatação pt-BR de números. Módulo puro (seguro para o navegador).
-import type { VotoCandidato } from './tipos';
+import type { Resultado, VotoCandidato } from './tipos';
 
 const MENOS = '−'; // sinal de menos tipográfico
 
@@ -40,6 +40,17 @@ export function rotuloSituacao(c: Pick<VotoCandidato, 'situacao'>): string {
   if (c.situacao === 'eleito') return 'eleito';
   if (c.situacao === 'não eleito') return 'não eleito';
   return '—';
+}
+
+/**
+ * Nota sob a tabela de resultado quando há candidatos com votos anulados (inclusive sub judice):
+ * esses votos não entram nos votos válidos nem nos percentuais. `null` quando não há.
+ */
+export function notaAnulados(r: Partial<Pick<Resultado, 'anulados'>>): string | null {
+  const lista = r.anulados ?? [];
+  if (lista.length === 0) return null;
+  const itens = lista.map((c) => `${c.nome_urna} (${c.partido}), ${inteiro(c.votos)} ${c.votos === 1 ? 'voto' : 'votos'}`);
+  return `Votos anulados (inclusive sub judice): ${itens.join('; ')} — não entram nos percentuais nem nos votos válidos.`;
 }
 
 /**

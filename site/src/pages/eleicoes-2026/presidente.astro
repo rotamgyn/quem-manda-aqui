@@ -59,7 +59,7 @@ const lider26 = exterior.r2026?.candidatos[0];
     </div>
 
     <h2>O que mudou desde 2022</h2>
-    <BarrasComparativas linhas={br.partidos} titulo="Presidente, 1º turno: 2026 contra 2022" legenda="Porcentagem dos votos válidos por partido para presidente, 2022 e 2026, no Brasil" />
+    <BarrasComparativas linhas={br.partidos} anulados2026={br.r2026?.anulados.map((a) => a.partido)} titulo="Presidente, 1º turno: 2026 contra 2022" legenda="Porcentagem dos votos válidos por partido para presidente, 2022 e 2026, no Brasil" />
     {br.volatilidade !== null && <p>Volatilidade de Pedersen nacional: <b>{br.volatilidade.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</b> (de 0 a 100).</p>}
 
     <h2>Exterior</h2>

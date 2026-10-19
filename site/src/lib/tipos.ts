@@ -27,7 +27,11 @@ export type Resultado = {
   nulos: number;
   validos: number;
   pct_secoes_totalizadas: number;
+  /** Candidatos válidos (percentuais sobre `validos`). */
   candidatos: VotoCandidato[];
+  /** Candidatos com votos anulados (inclusive sub judice): fora de `validos`, sem `pct`. */
+  anulados: Omit<VotoCandidato, 'pct'>[];
+  votos_anulados: number;
 };
 
 export type LinhaPartido = {
@@ -35,6 +39,8 @@ export type LinhaPartido = {
   pct_2022: number | null;
   pct_2026: number | null;
   delta_pp: number | null;
+  /** Siglas originais de 2022 somadas nesta linha (ex.: PRD ← PATRIOTA + PTB); [] sem 2022. */
+  siglas_2022: string[];
 };
 
 export type Comparacao = {

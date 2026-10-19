@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { inteiro, nomeProprio, nomeUF, pct, pctSecoes, pp, rotuloSituacao } from './formato';
+import { inteiro, nomeProprio, nomeUF, notaAnulados, pct, pctSecoes, pp, rotuloSituacao } from './formato';
 
 describe('formato', () => {
   test('pct usa vírgula e duas casas; null vira travessão', () => {
@@ -57,5 +57,16 @@ describe('pctSecoes', () => {
   test('truncamento seguro com ponto flutuante', () => {
     expect(pctSecoes(87.29, false)).toBe('87,29%'); // 87.29*100 = 8728.999...
     expect(pctSecoes(57.13, false)).toBe('57,13%');
+  });
+  test('notaAnulados lista candidatos anulados fora dos percentuais', () => {
+    const a = (nome_urna: string, partido: string, votos: number) => ({ numero: 50, nome_urna, partido, votos, situacao: '' as const });
+    expect(notaAnulados({ anulados: [] })).toBeNull();
+    expect(notaAnulados({})).toBeNull();
+    expect(notaAnulados({ anulados: [a('DR. HELTON', 'PSOL', 37081)] })).toBe(
+      'Votos anulados (inclusive sub judice): DR. HELTON (PSOL), 37.081 votos — não entram nos percentuais nem nos votos válidos.',
+    );
+    expect(notaAnulados({ anulados: [a('A', 'X', 2), a('B', 'Y', 1)] })).toBe(
+      'Votos anulados (inclusive sub judice): A (X), 2 votos; B (Y), 1 voto — não entram nos percentuais nem nos votos válidos.',
+    );
   });
 });

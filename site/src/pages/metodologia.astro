@@ -16,6 +16,10 @@ const partes = (nota: string) => nota.split(URL_RE).filter((p) => p !== '');
     <p>Para cada município e cargo (presidente e governador, 1º turno), somamos os votos dos candidatos de cada partido ou federação e dividimos pelos <strong>votos válidos</strong> (que não incluem brancos e nulos). O resultado é a porcentagem do partido naquele município. A diferença entre 2026 e 2022 é dada em <strong>pontos percentuais</strong> (p.p.): se um partido foi de 30% para 35%, a diferença é de +5 p.p.</p>
     <p>Um partido que só aparece em um dos anos fica com o outro lado em branco ("não disputou"), e não com 0%.</p>
 
+    <h2 id="anulados">Votos anulados e diferença para o app do TSE</h2>
+    <p>Quando o registro de um candidato é anulado, inclusive enquanto ainda há recurso na Justiça Eleitoral (situação chamada <em>sub judice</em>), os votos dados a ele não são votos válidos. Seguindo a regra legal, nossos percentuais são sempre calculados sobre os <strong>votos válidos</strong> e deixam esses votos de fora. Os votos anulados aparecem numa nota abaixo da tabela de resultado, com o nome do candidato e o total, mas não entram em nenhum percentual nem na comparação por partido.</p>
+    <p>O aplicativo de resultados do TSE calcula o percentual de cada candidato incluindo os votos anulados <em>sub judice</em> na base. Por isso, nos estados com candidatos nessa situação, os percentuais deste site são maiores do que os do app do TSE (em geral, por décimos; quando há muitos votos anulados, por mais). Os votos de cada candidato são exatamente os mesmos.</p>
+
     <h2>Volatilidade de Pedersen</h2>
     <p>É um número único que resume o quanto o voto de uma cidade mudou entre duas eleições. Soma-se quanto cada partido ganhou ou perdeu (em pontos percentuais, sem considerar o sinal) e divide-se por dois, porque o que um partido ganha, outro perde.</p>
     <p class="formula">Volatilidade = ½ × soma de |% em 2026 − % em 2022|</p>
