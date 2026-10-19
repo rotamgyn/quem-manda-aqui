@@ -7,6 +7,7 @@ import { UFS, lerMetaObrigatoria, lerMunicipiosUF } from '../../../../lib/dados'
 import { urlOg } from '../../../../lib/cartao';
 import { fraseDestaque } from '../../../../lib/frase';
 import { inteiro, nomeProprio, pct, pctSecoes } from '../../../../lib/formato';
+import { doEstado } from '../../../../lib/estados';
 import { linhasParticipacao, type Medida } from '../../../../lib/participacao';
 import type { Comparacao, MunicipioComparado } from '../../../../lib/tipos';
 
@@ -107,7 +108,7 @@ const semResultado2022 = !pres.r2022;
             )}
           </>
         )}
-        <p><a href={`/eleicoes-2026/governador/${ufMin}/`}>Ver o governador de {uf}, com os mapas município a município</a></p>
+        <p><a href={`/eleicoes-2026/governador/${ufMin}/`}>Ver o governador {doEstado(uf)}, com os mapas município a município</a></p>
       </>
     )}
 

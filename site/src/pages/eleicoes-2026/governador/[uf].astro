@@ -6,7 +6,8 @@ import BarrasComparativas from '../../../components/BarrasComparativas.astro';
 import Mapa from '../../../components/Mapa.astro';
 import { UFS, lerComparacao, lerMetaObrigatoria, lerMunicipiosUF } from '../../../lib/dados';
 import { urlOg } from '../../../lib/cartao';
-import { nomeUF, sigla2022 } from '../../../lib/formato';
+import { sigla2022 } from '../../../lib/formato';
+import { doEstado, noEstado } from '../../../lib/estados';
 import { coresDoMapa, corNoMapa } from '../../../lib/cores';
 import type { Resultado } from '../../../lib/tipos';
 import { montarLegenda, rotuloVencedor } from '../../../lib/mapa';
@@ -18,7 +19,8 @@ export function getStaticPaths() {
 const { uf } = Astro.params;
 const meta = lerMetaObrigatoria();
 const c = lerComparacao(uf!, 'governador');
-const nome = nomeUF(c.nome ?? uf!.toUpperCase());
+const de = doEstado(uf!); // "da Bahia", "do Espírito Santo", "de Goiás"
+const em = noEstado(uf!); // "na Bahia", "no Espírito Santo", "em Goiás"
 
 type Ano = { cores: Record<string, string>; rotulos: Record<string, string> };
 const m22: Ano = { cores: {}, rotulos: {} };
@@ -50,27 +52,27 @@ for (const m of municipios) {
 const legenda = montarLegenda(vencedores, (p) => corNoMapa(paleta, p));
 ---
 <Layout
-  titulo={`Governador de ${nome} 2026`}
+  titulo={`Governador ${de} 2026`}
   imagemOg={urlOg(`governador/${uf!.toLowerCase()}`)}
-  descricao={`Resultado do 1º turno para governador em ${nome} em 2026, comparado com 2022 por partido.`}
+  descricao={`Resultado do 1º turno para governador ${em} em 2026, comparado com 2022 por partido.`}
 >
   <div class="pagina wrap">
     <p class="nota"><a href="/eleicoes-2026">Eleições 2026</a></p>
-    <h1>Governador de {nome}</h1>
+    <h1>Governador {de}</h1>
     <p class="lede">1º turno de 2026, comparado com o 1º turno de 2022, por partido.</p>
 
-    <ResultadoPrimeiroTurno resultado={c.r2026} apuracaoCompleta={c.apuracao_completa} legenda={`Resultado do 1º turno para governador em ${nome}, 2026`} />
+    <ResultadoPrimeiroTurno resultado={c.r2026} apuracaoCompleta={c.apuracao_completa} legenda={`Resultado do 1º turno para governador ${em}, 2026`} />
 
     <h2>Quem venceu em cada município</h2>
     <div class="mapas">
       <Mapa uf={uf!} id={`${uf}-2022`} cores={m22.cores} rotulos={m22.rotulos} links={links} legenda={legenda} destacar={virou} semDados={sem2022}
-        rotuloDestaque="O mais votado mudou desde 2022" rotuloSemDados="sem dados de 2022" legendaMapa={`Governador de ${nome}: partido mais votado em cada município, 1º turno de 2022`} />
+        rotuloDestaque="O mais votado mudou desde 2022" rotuloSemDados="sem dados de 2022" legendaMapa={`Governador ${de}: partido mais votado em cada município, 1º turno de 2022`} />
       <Mapa uf={uf!} id={`${uf}-2026`} cores={m26.cores} rotulos={m26.rotulos} links={links} legenda={legenda} destacar={virou}
-        rotuloDestaque="O mais votado mudou desde 2022" legendaMapa={`Governador de ${nome}: partido mais votado em cada município, 1º turno de 2026`} />
+        rotuloDestaque="O mais votado mudou desde 2022" legendaMapa={`Governador ${de}: partido mais votado em cada município, 1º turno de 2026`} />
     </div>
 
     <h2>O que mudou desde 2022</h2>
-    <BarrasComparativas linhas={c.partidos} anulados2026={c.r2026?.anulados.map((a) => a.partido)} titulo={`Governador de ${nome}, 1º turno: 2026 contra 2022`} legenda={`Porcentagem dos votos válidos por partido para governador em ${nome}, 2022 e 2026`} />
+    <BarrasComparativas linhas={c.partidos} anulados2026={c.r2026?.anulados.map((a) => a.partido)} titulo={`Governador ${de}, 1º turno: 2026 contra 2022`} legenda={`Porcentagem dos votos válidos por partido para governador ${em}, 2022 e 2026`} />
     {c.volatilidade !== null && <p>Volatilidade de Pedersen no estado: <b>{c.volatilidade.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</b> (de 0 a 100).</p>}
 
     <Fonte fonte={`TSE, dados abertos de 2022 e 2026 (arquivo de 2026 gerado em ${meta.fonte_2026_dg_hg})`} atualizadoEm={meta.gerado_em} />

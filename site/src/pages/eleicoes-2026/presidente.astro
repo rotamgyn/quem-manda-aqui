@@ -7,7 +7,8 @@ import Mapa from '../../components/Mapa.astro';
 import RankingMudanca from '../../components/RankingMudanca.astro';
 import { UFS, lerComparacao, lerMetaObrigatoria, lerRanking } from '../../lib/dados';
 import { urlOg } from '../../lib/cartao';
-import { inteiro, nomeUF, pct } from '../../lib/formato';
+import { inteiro, pct } from '../../lib/formato';
+import { nomeEstado } from '../../lib/estados';
 import { coresDoMapa, corNoMapa } from '../../lib/cores';
 import { montarLegenda, rotuloVencedor } from '../../lib/mapa';
 
@@ -25,7 +26,7 @@ for (const { uf, c } of dadosUF) {
   const v = c.vencedor_2026;
   const lider = c.r2026?.candidatos.find((x) => x.partido === v);
   cores[uf] = v ? corNoMapa(paleta, v) : 'var(--outros)';
-  rotulos[uf] = rotuloVencedor(nomeUF(c.nome ?? uf), 2026, v, lider?.pct ?? null);
+  rotulos[uf] = rotuloVencedor(nomeEstado(uf), 2026, v, lider?.pct ?? null);
   links[uf] = `/eleicoes-2026/governador/${uf.toLowerCase()}/`;
   if (v) vencedores.push(v);
 }

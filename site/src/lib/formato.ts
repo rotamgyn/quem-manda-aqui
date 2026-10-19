@@ -25,15 +25,6 @@ export function inteiro(n: number): string {
 
 const MINUSCULAS = new Set(['de', 'da', 'do', 'das', 'dos', 'e']);
 
-/** "MATO GROSSO DO SUL" → "Mato Grosso do Sul". */
-export function nomeUF(nome: string): string {
-  return nome
-    .toLocaleLowerCase('pt-BR')
-    .split(' ')
-    .map((p, i) => (i > 0 && MINUSCULAS.has(p) ? p : p.charAt(0).toLocaleUpperCase('pt-BR') + p.slice(1)))
-    .join(' ');
-}
-
 /** Rótulo da situação no 1º turno, direto do campo `situacao` dos dados. */
 export function rotuloSituacao(c: Pick<VotoCandidato, 'situacao'>): string {
   if (c.situacao === '2º turno') return 'vai ao 2º turno';

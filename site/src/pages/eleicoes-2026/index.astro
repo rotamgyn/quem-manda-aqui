@@ -4,7 +4,8 @@ import Fonte from '../../components/Fonte.astro';
 import { UFS, lerComparacao, lerMetaObrigatoria } from '../../lib/dados';
 import { urlOg } from '../../lib/cartao';
 import { corEm, coresPorPosicao } from '../../lib/cores';
-import { nomeUF, pct, pctSecoes, pp, rotuloSituacao } from '../../lib/formato';
+import { pct, pctSecoes, pp, rotuloSituacao } from '../../lib/formato';
+import { nomeEstado } from '../../lib/estados';
 
 const meta = lerMetaObrigatoria();
 const br = lerComparacao('br', 'presidente');
@@ -16,7 +17,7 @@ const maiores = br.partidos
 // Cores por posição dentro de cada lista (Ruling 15).
 const coresDestaque = coresPorPosicao(br.partidos.filter((l) => destaque.some((c) => c.partido === l.partido)));
 const coresMaiores = coresPorPosicao(maiores);
-const estados = UFS.map((uf) => ({ uf, nome: nomeUF(lerComparacao(uf, 'governador').nome ?? uf) }));
+const estados = UFS.map((uf) => ({ uf, nome: nomeEstado(uf) }));
 ---
 <Layout
   titulo="Eleições 2026"

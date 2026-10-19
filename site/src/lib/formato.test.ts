@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { inteiro, nomeProprio, nomeUF, notaAnulados, notasSiglas2022, pct, pctSecoes, pp, rotuloSituacao, sigla2022 } from './formato';
+import { inteiro, nomeProprio, notaAnulados, notasSiglas2022, pct, pctSecoes, pp, rotuloSituacao, sigla2022 } from './formato';
 
 describe('formato', () => {
   test('pct usa vírgula e duas casas; null vira travessão', () => {
@@ -16,10 +16,6 @@ describe('formato', () => {
   test('inteiro usa ponto como separador de milhar', () => {
     expect(inteiro(56082216)).toBe('56.082.216');
     expect(inteiro(0)).toBe('0');
-  });
-  test('nomeUF converte caixa alta em nome próprio', () => {
-    expect(nomeUF('MATO GROSSO DO SUL')).toBe('Mato Grosso do Sul');
-    expect(nomeUF('GOIÁS')).toBe('Goiás');
   });
   test('rotuloSituacao mapeia a situação direto', () => {
     const c = (situacao: string) => ({ situacao }) as never;

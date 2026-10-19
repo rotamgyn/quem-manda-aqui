@@ -3,7 +3,8 @@ import type { APIRoute } from 'astro';
 import { UFS, lerComparacao, lerMunicipiosUF } from '../../lib/dados';
 import { cartaoPNG, escolherBarras } from '../../lib/cartao';
 import { fraseDestaque } from '../../lib/frase';
-import { nomeProprio, nomeUF } from '../../lib/formato';
+import { nomeProprio } from '../../lib/formato';
+import { noEstado } from '../../lib/estados';
 import type { LinhaPartido } from '../../lib/tipos';
 
 type Props = { titulo: string; frase: string; partidos: LinhaPartido[]; sem2022: boolean };
@@ -19,7 +20,7 @@ export function getStaticPaths() {
     const c = lerComparacao(uf, 'governador');
     rotas.push({
       params: { rota: `governador/${uf.toLowerCase()}` },
-      props: { titulo: `Quem manda aqui em ${nomeUF(c.nome ?? uf)}`, frase: 'Governador, 1º turno de 2026, comparado com 2022.', partidos: c.partidos, sem2022: false },
+      props: { titulo: `Quem manda aqui ${noEstado(uf)}`, frase: 'Governador, 1º turno de 2026, comparado com 2022.', partidos: c.partidos, sem2022: false },
     });
     for (const m of lerMunicipiosUF(uf)) {
       rotas.push({

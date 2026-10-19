@@ -2,6 +2,7 @@
 import Layout from '../../../components/Layout.astro';
 import { UFS, lerMunicipiosUF } from '../../../lib/dados';
 import { nomeProprio } from '../../../lib/formato';
+import { doEstado } from '../../../lib/estados';
 
 export function getStaticPaths() {
   return UFS.map((uf) => ({ params: { uf: uf.toLowerCase() } }));
@@ -10,12 +11,12 @@ const uf = Astro.params.uf!;
 const lista = lerMunicipiosUF(uf)
   .map((m) => ({ nome: nomeProprio(m.nome), url: `/eleicoes-2026/municipio/${uf}/${m.slug}/` }))
   .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
-const UF = uf.toUpperCase();
+const de = doEstado(uf); // "de Goiás", "da Bahia", "do Acre"
 ---
-<Layout titulo={`Municípios de ${UF}`} descricao={`Todos os ${lista.length} municípios de ${UF}, em ordem alfabética, com o resultado de 2026 comparado com 2022.`}>
+<Layout titulo={`Municípios ${de}`} descricao={`Todos os ${lista.length} municípios ${de}, em ordem alfabética, com o resultado de 2026 comparado com 2022.`}>
   <div class="pagina wrap">
     <p class="nota"><a href="/eleicoes-2026/municipios/">Municípios por estado</a></p>
-    <h1>Municípios de {UF}</h1>
+    <h1>Municípios {de}</h1>
     <p class="lede">{lista.length} municípios, em ordem alfabética.</p>
     <ul class="cidades">
       {lista.map((c) => <li><a href={c.url}>{c.nome}</a></li>)}
