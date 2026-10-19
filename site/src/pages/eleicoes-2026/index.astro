@@ -4,7 +4,7 @@ import Fonte from '../../components/Fonte.astro';
 import { UFS, lerComparacao, lerMetaObrigatoria } from '../../lib/dados';
 import { carregarOrdemNacional } from '../../lib/ordemPartidos';
 import { corDoPartido } from '../../lib/cores';
-import { nomeUF, pct, pctApuracao, pp, rotuloSituacao } from '../../lib/formato';
+import { nomeUF, pct, pctSecoes, pp, rotuloSituacao } from '../../lib/formato';
 
 carregarOrdemNacional();
 const meta = lerMetaObrigatoria();
@@ -26,7 +26,7 @@ const estados = UFS.map((uf) => ({ uf, nome: nomeUF(lerComparacao(uf, 'governado
 
     <h2>Presidente, resultado nacional</h2>
     {!br.apuracao_completa && br.r2026 && (
-      <p class="aviso" role="status">Apuração incompleta: {pctApuracao(br.r2026.pct_secoes_totalizadas)} das seções totalizadas. Os números podem mudar.</p>
+      <p class="aviso" role="status">Apuração incompleta: {pctSecoes(br.r2026.pct_secoes_totalizadas, false)} das seções totalizadas. Os números podem mudar.</p>
     )}
     <ul class="cartoes">
       {destaque.map((c) => (

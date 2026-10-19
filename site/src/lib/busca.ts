@@ -20,12 +20,15 @@ export function normalizar(texto: string): string {
  * Até 8 resultados. Ordem: nome começa com o termo; alguma palavra começa com o termo;
  * termo em qualquer parte do nome. Empate: ordem alfabética.
  */
+const normalizados = new WeakMap<ItemBusca, string>(); // nome normalizado, calculado uma vez por item
+
 export function buscar(termo: string, indice: ItemBusca[]): ItemBusca[] {
   const t = normalizar(termo);
   if (t === '') return [];
   const achados: { item: ItemBusca; nome: string; rank: number }[] = [];
   for (const item of indice) {
-    const nome = normalizar(item.n);
+    let nome = normalizados.get(item);
+    if (nome === undefined) { nome = normalizar(item.n); normalizados.set(item, nome); }
     const pos = nome.indexOf(t);
     if (pos < 0) continue;
     const rank = pos === 0 ? 0 : nome.includes(` ${t}`) ? 1 : 2;

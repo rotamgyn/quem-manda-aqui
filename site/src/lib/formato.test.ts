@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { inteiro, nomeProprio, nomeUF, pct, pctApuracao, pctSecoes, pp, rotuloSituacao } from './formato';
+import { inteiro, nomeProprio, nomeUF, pct, pctSecoes, pp, rotuloSituacao } from './formato';
 
 describe('formato', () => {
   test('pct usa vírgula e duas casas; null vira travessão', () => {
@@ -16,11 +16,6 @@ describe('formato', () => {
   test('inteiro usa ponto como separador de milhar', () => {
     expect(inteiro(56082216)).toBe('56.082.216');
     expect(inteiro(0)).toBe('0');
-  });
-  test('pctApuracao trunca e nunca mostra 100%', () => {
-    expect(pctApuracao(99.996)).toBe('99,99%');
-    expect(pctApuracao(100)).toBe('99,99%');
-    expect(pctApuracao(87.5)).toBe('87,5%');
   });
   test('nomeUF converte caixa alta em nome próprio', () => {
     expect(nomeUF('MATO GROSSO DO SUL')).toBe('Mato Grosso do Sul');
@@ -51,9 +46,16 @@ describe('nomeProprio', () => {
 });
 
 describe('pctSecoes', () => {
-  test('trunca e só mostra 100% quando completo', () => {
-    expect(pctSecoes(99.999)).toBe('99,99%');
-    expect(pctSecoes(100)).toBe('100%');
-    expect(pctSecoes(87.456)).toBe('87,45%');
+  test('trunca, sempre 2 casas, e só mostra 100% quando o chamador diz que está completo', () => {
+    expect(pctSecoes(99.999, false)).toBe('99,99%');
+    expect(pctSecoes(100, false)).toBe('99,99%');
+    expect(pctSecoes(87.456, false)).toBe('87,45%');
+    expect(pctSecoes(99.9, false)).toBe('99,90%');
+    expect(pctSecoes(87.5, false)).toBe('87,50%');
+    expect(pctSecoes(100, true)).toBe('100,00%');
+  });
+  test('truncamento seguro com ponto flutuante', () => {
+    expect(pctSecoes(87.29, false)).toBe('87,29%'); // 87.29*100 = 8728.999...
+    expect(pctSecoes(57.13, false)).toBe('57,13%');
   });
 });

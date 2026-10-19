@@ -1,5 +1,5 @@
 ---
-import { inteiro, pct, pctApuracao, rotuloSituacao } from '../lib/formato';
+import { inteiro, pct, pctSecoes, rotuloSituacao } from '../lib/formato';
 import type { Resultado } from '../lib/tipos';
 
 interface Props { resultado: Resultado | null; apuracaoCompleta: boolean; legenda: string }
@@ -7,7 +7,7 @@ const { resultado, apuracaoCompleta, legenda } = Astro.props;
 ---
 {!apuracaoCompleta && resultado && (
   <p class="aviso" role="status">
-    Apuração incompleta: {pctApuracao(resultado.pct_secoes_totalizadas)} das seções totalizadas. Os números podem mudar até o fim da contagem.
+    Apuração incompleta: {pctSecoes(resultado.pct_secoes_totalizadas, false)} das seções totalizadas. Os números podem mudar até o fim da contagem.
   </p>
 )}
 {resultado ? (

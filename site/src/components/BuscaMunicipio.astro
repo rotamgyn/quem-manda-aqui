@@ -34,6 +34,8 @@ const { id, compacta = false } = Astro.props;
     let itens: ItemBusca[] = [];
     let ativo = -1;
     let pedido = 0;
+    let pronto = false; // `itens` corresponde ao texto atual do campo
+    let falhou = false;
 
     const fechar = () => {
       lista.hidden = true;
@@ -84,12 +86,17 @@ const { id, compacta = false } = Astro.props;
     const atualizar = async () => {
       const termo = entrada.value;
       const meu = ++pedido;
+      pronto = false;
+      itens = []; // resultados antigos não valem para o texto novo
       try {
         const dados = await carregar();
         if (meu !== pedido) return;
         itens = buscar(termo, dados);
+        pronto = true;
+        falhou = false;
         mostrar(termo);
       } catch {
+        falhou = true;
         estado.textContent = 'Não foi possível carregar a busca. Use a lista de municípios por estado.';
       }
     };
@@ -103,15 +110,22 @@ const { id, compacta = false } = Astro.props;
         e.preventDefault(); marcar((ativo + 1) % itens.length);
       } else if (e.key === 'ArrowUp' && aberta) {
         e.preventDefault(); marcar(ativo <= 0 ? itens.length - 1 : ativo - 1);
+      } else if ((e.key === 'Home' || e.key === 'End') && aberta && ativo >= 0) {
+        e.preventDefault(); marcar(e.key === 'Home' ? 0 : itens.length - 1);
       } else if (e.key === 'Escape') {
         if (!lista.hidden) { e.preventDefault(); fechar(); }
-      } else if (e.key === 'Enter' && aberta) {
-        e.preventDefault(); ir(itens[ativo >= 0 ? ativo : 0]!);
       }
     });
+    // Enter e o botão passam por aqui: só navega com seleção explícita ou resultado único.
     form.addEventListener('submit', (e) => {
-      // Com JavaScript e resultados, vai direto ao município; sem resultados, cai na lista por estado.
-      if (itens.length > 0 && entrada.value.trim() !== '') { e.preventDefault(); ir(itens[ativo >= 0 ? ativo : 0]!); }
+      if (falhou || entrada.value.trim() === '') return; // sem busca: cai na lista por estado
+      e.preventDefault();
+      if (!pronto) return; // ainda calculando; a lista aparece em instantes
+      if (ativo >= 0) return ir(itens[ativo]!);
+      if (itens.length === 1) return ir(itens[0]!);
+      if (itens.length === 0) { location.href = `${form.action}?q=${encodeURIComponent(entrada.value)}`; return; }
+      estado.textContent = `${itens.length} municípios encontrados. Escolha um da lista com as setas e Enter.`;
+      entrada.focus();
     });
     form.addEventListener('focusout', () => setTimeout(() => { if (!form.contains(document.activeElement)) fechar(); }, 0));
   });
@@ -127,13 +141,14 @@ const { id, compacta = false } = Astro.props;
   button { font: inherit; font-weight: 700; background: var(--tinta); color: var(--inverso); border: 0; padding: 0 1.2rem; cursor: pointer; min-height: 52px; }
   .lista { list-style: none; margin: 0; padding: 0; background: var(--cartao); border: 2px solid var(--tinta); border-radius: var(--r-m); overflow: hidden; }
   .lista[hidden] { display: none; }
-  .lista li { border-top: 1px solid var(--linha); }
-  .lista li:first-child { border-top: 0; }
-  .lista a { display: block; padding: 0.75rem 1rem; min-height: 44px; text-decoration: none; color: var(--tinta); font-weight: 700; }
-  .lista li[aria-selected="true"] { background: var(--tinta); }
-  .lista li[aria-selected="true"] a { color: var(--inverso); }
-  .lista a:hover { text-decoration: underline; }
-  .vazio { padding: 0.75rem 1rem; color: var(--tinta-2); }
+  /* os itens são criados pelo script e não recebem o atributo de escopo do Astro */
+  .busca-mun :global(.lista li) { border-top: 1px solid var(--linha); }
+  .busca-mun :global(.lista li:first-child) { border-top: 0; }
+  .busca-mun :global(.lista a) { display: block; padding: 0.75rem 1rem; min-height: 44px; box-sizing: border-box; text-decoration: none; color: var(--tinta); font-weight: 700; }
+  .busca-mun :global(.lista li[aria-selected="true"]) { background: var(--tinta); }
+  .busca-mun :global(.lista li[aria-selected="true"] a) { color: var(--inverso); }
+  .busca-mun :global(.lista a:hover) { text-decoration: underline; }
+  .busca-mun :global(.lista li.vazio) { padding: 0.75rem 1rem; color: var(--tinta-2); }
   .compacta { max-width: none; width: 100%; gap: 0; }
   .compacta input { font-size: var(--t-s); padding: 0.55rem 0.75rem; }
   .compacta .campo { border-width: 2px; }

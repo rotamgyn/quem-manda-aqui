@@ -23,15 +23,6 @@ export function inteiro(n: number): string {
   return n.toLocaleString('pt-BR', { maximumFractionDigits: 0 });
 }
 
-/**
- * Percentual de seções totalizadas para o AVISO de apuração incompleta: trunca em 2 casas
- * e nunca passa de 99,99%, porque só se mostra quando a apuração NÃO está completa.
- */
-export function pctApuracao(n: number): string {
-  const t = Math.min(Math.floor(n * 100) / 100, 99.99);
-  return `${t.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%`;
-}
-
 const MINUSCULAS = new Set(['de', 'da', 'do', 'das', 'dos', 'e']);
 
 /** "MATO GROSSO DO SUL" → "Mato Grosso do Sul". */
@@ -52,13 +43,14 @@ export function rotuloSituacao(c: Pick<VotoCandidato, 'situacao'>): string {
 }
 
 /**
- * Percentual de seções totalizadas para exibição geral: trunca em 2 casas e só mostra
- * "100%" quando a totalização está completa (nunca arredonda 99,996 para 100).
+ * Percentual de seções totalizadas, sempre com 2 casas e TRUNCADO (nunca arredondado para cima).
+ * "100,00%" só aparece quando quem chama informa que a totalização está completa; caso contrário
+ * o valor nunca passa de 99,99%.
  */
-export function pctSecoes(n: number): string {
-  if (n >= 100) return '100%';
-  const t = Math.min(Math.floor(n * 100) / 100, 99.99);
-  return `${t.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%`;
+export function pctSecoes(n: number, completa: boolean): string {
+  if (completa) return '100,00%';
+  const t = Math.min(Math.floor(Number((n * 100).toFixed(6))) / 100, 99.99);
+  return `${fmt(t, 2)}%`;
 }
 
 const PARTICULAS = new Set([...MINUSCULAS, 'del']);

@@ -24,7 +24,7 @@ const fontes = [
       <ul>
         <li>Dados gerados em <time datetime={meta.gerado_em}>{formatarDataHora(meta.gerado_em)}</time> (horário de Brasília).</li>
         <li>Versão do arquivo de resultados de 2026 do TSE: <code>{meta.fonte_2026_dg_hg}</code> (data e hora de geração do arquivo, fornecidas pelo TSE).</li>
-        <li>Seções totalizadas no Brasil: {pctSecoes(meta.pct_secoes_br)}.</li>
+        <li>Seções totalizadas no Brasil: {pctSecoes(meta.pct_secoes_br, meta.pct_secoes_br >= 100)}.</li>
       </ul>
     ) : (
       <p>Os dados de 2026 ainda não foram gerados nesta versão do site.</p>

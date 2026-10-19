@@ -6,7 +6,7 @@ import ResultadoPrimeiroTurno from '../../../../components/ResultadoPrimeiroTurn
 import { UFS, lerMetaObrigatoria, lerMunicipiosUF } from '../../../../lib/dados';
 import { carregarOrdemNacional } from '../../../../lib/ordemPartidos';
 import { fraseDestaque } from '../../../../lib/frase';
-import { inteiro, nomeProprio, pct, pctApuracao } from '../../../../lib/formato';
+import { inteiro, nomeProprio, pct, pctSecoes } from '../../../../lib/formato';
 import { linhasParticipacao, type Medida } from '../../../../lib/participacao';
 import type { Comparacao, MunicipioComparado } from '../../../../lib/tipos';
 
@@ -24,6 +24,7 @@ const ufMin = uf.toLowerCase();
 const meta = lerMetaObrigatoria();
 const nome = nomeProprio(m.nome);
 const frase = fraseDestaque(m);
+const fraseComPonto = frase.endsWith('.') ? frase : `${frase}.`; // "p.p." já termina em ponto
 const pres = m.presidente;
 const gov: Comparacao | undefined = m.governador;
 
@@ -38,13 +39,13 @@ const medida = (x: Medida | null) =>
   x === null ? null : x.pct === null ? inteiro(x.n) : `${inteiro(x.n)} (${pct(x.pct)})`;
 const semResultado2022 = !pres.r2022;
 ---
-<Layout titulo={`Quem manda aqui em ${nome}/${uf}?`} descricao={`${frase}. Resultado do 1º turno de 2026 em ${nome}/${uf}, comparado com 2022, por partido.`}>
+<Layout titulo={`Quem manda aqui em ${nome}/${uf}?`} descricao={`${frase}${frase.endsWith('.') ? '' : '.'} Resultado do 1º turno de 2026 em ${nome}/${uf}, comparado com 2022, por partido.`}>
   <div class="pagina wrap">
     <p class="nota crumbs">
       <a href="/eleicoes-2026">Eleições 2026</a> / <a href={`/eleicoes-2026/municipios/${ufMin}/`}>{uf}</a> / {nome}
     </p>
     <h1>Quem manda aqui em {nome}/{uf}?</h1>
-    <p class="resposta">{frase}.</p>
+    <p class="resposta">{fraseComPonto}</p>
     {topoPres && (
       <p class="lede">
         Para presidente, o mais votado no 1º turno de 2026 foi {topoPres.nome_urna} ({topoPres.partido}), com {pct(topoPres.pct)} dos votos válidos.
@@ -58,7 +59,7 @@ const semResultado2022 = !pres.r2022;
       <>
         {!pres.apuracao_completa && (
           <p class="aviso" role="status">
-            Apuração incompleta: {pctApuracao(pres.r2026.pct_secoes_totalizadas)} das seções totalizadas. Os números podem mudar até o fim da contagem.
+            Apuração incompleta: {pctSecoes(pres.r2026.pct_secoes_totalizadas, false)} das seções totalizadas. Os números podem mudar até o fim da contagem.
           </p>
         )}
         {semResultado2022 ? (
@@ -87,7 +88,7 @@ const semResultado2022 = !pres.r2022;
           <>
             {!gov.apuracao_completa && (
               <p class="aviso" role="status">
-                Apuração incompleta: {pctApuracao(gov.r2026.pct_secoes_totalizadas)} das seções totalizadas. Os números podem mudar até o fim da contagem.
+                Apuração incompleta: {pctSecoes(gov.r2026.pct_secoes_totalizadas, false)} das seções totalizadas. Os números podem mudar até o fim da contagem.
               </p>
             )}
             {!gov.r2022 ? (
