@@ -210,13 +210,29 @@ def test_sem_hook_nao_ha_bloco_projecao(tmp_path):
     assert "projecao" not in _estado(tmp_path)
 
 
-def test_cli_simular_sem_simulador_da_erro_claro():
+def test_cli_simular_usa_o_baixar_do_simulador(tmp_path):
+    from qma_eleicoes.ao_vivo.__main__ import main
+    from qma_eleicoes.config import URL_CONFIG_GOVERNADOR_T2
+
+    pedidos = []
+
+    def baixar(url, **kw):
+        pedidos.append(url)
+        raise RuntimeError("parar")
+
+    dados = tmp_path / "dados"
+    (dados / "comum").mkdir(parents=True)
+    (dados / "eleicoes-2026").mkdir()
+    (dados / "comum" / "municipios.json").write_text("[]", encoding="utf-8")
+    (dados / "eleicoes-2026" / "base-ao-vivo.json").write_text("{}", encoding="utf-8")
     import pytest
 
-    from qma_eleicoes.ao_vivo.__main__ import main
-
-    with pytest.raises(SystemExit, match="Tarefa 4"):
-        main(["--simular", "pasta-qualquer", "--local", "x"])
+    with pytest.raises(RuntimeError, match="parar"):
+        main(
+            ["--simular", "--local", str(tmp_path / "saida"), "--dados", str(dados)],
+            _baixar_simulado=lambda municipios: baixar,
+        )
+    assert pedidos == [URL_CONFIG_GOVERNADOR_T2]
 
 
 def test_excecao_com_url_do_r2_nao_vaza_para_estado_nem_log(tmp_path, caplog, monkeypatch):

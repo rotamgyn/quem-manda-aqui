@@ -34,7 +34,11 @@ def _parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="python -m qma_eleicoes.ao_vivo")
     p.add_argument("--intervalo", type=float, default=60.0, help="segundos entre inícios de ciclo")
     p.add_argument("--ate", type=_hora, help="HH:MM de hoje (America/Sao_Paulo, independe do TZ da máquina; sem virada de dia) em que o robô encerra")
-    p.add_argument("--simular", metavar="PASTA", help="reproduz um ensaio gravado (Tarefa 4)")
+    p.add_argument(
+        "--simular", action="store_true",
+        help="ensaio: reproduz o 2º turno de 2022 (CSVs em .cache/2022) no lugar do TSE; "
+        "com --local roda totalmente offline",
+    )  # fmt: skip
     p.add_argument("--local", metavar="PASTA", help="grava em disco em vez de publicar no R2")
     p.add_argument("--prefixo", default=PREFIXO_PADRAO, help="prefixo das chaves (ensaio/, teste/)")
     p.add_argument("--max-por-ciclo", type=int, default=150, help="municipais por ciclo")
@@ -42,30 +46,38 @@ def _parser() -> argparse.ArgumentParser:
     return p
 
 
+def _simulador_2022(municipios: list[Municipio]) -> Callable:
+    """`_baixar` simulado com o 2º turno de 2022 (CSVs do cache; capitais apuram primeiro)."""
+    from ..leitor_2022 import arquivos_2022, ler_2022
+    from .simulador import baixar_simulado, gerar_sequencia
+
+    votacao, detalhe = arquivos_2022()
+    r2022 = ler_2022(votacao, detalhe, turno=2)
+    capitais = {(m.uf, m.tse) for m in municipios if m.capital}
+    return baixar_simulado(gerar_sequencia(r2022, capitais=capitais))
+
+
 def main(
     argv: list[str] | None = None,
     *,
-    _baixar_simulado: Callable[[str], Callable] | None = None,
+    _baixar_simulado: Callable[[list[Municipio]], Callable] | None = None,
     _projetar_bloco: Callable | None = None,
 ) -> int:
-    """`_baixar_simulado(pasta)` devolve o `_baixar` do simulador (plugado pela Tarefa 4);
-    `_projetar_bloco` é o gancho da projeção (Tarefa 5)."""
+    """`_baixar_simulado(municipios)` devolve o `_baixar` do `--simular` (padrão: o simulador
+    sobre o 2º turno de 2022); `_projetar_bloco` é o gancho da projeção (Tarefa 5)."""
     args = _parser().parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("botocore").setLevel(logging.WARNING)
-
-    baixar = baixar_json
-    if args.simular:
-        if _baixar_simulado is None:
-            raise SystemExit("--simular: simulador disponível na Tarefa 4")
-        baixar = _baixar_simulado(args.simular)
 
     municipios_json = args.dados / "comum" / "municipios.json"
     municipios = [Municipio(**m) for m in json.loads(municipios_json.read_text(encoding="utf-8"))]
     base = json.loads(
         (args.dados / "eleicoes-2026" / "base-ao-vivo.json").read_text(encoding="utf-8")
     )
+    baixar = baixar_json
+    if args.simular:
+        baixar = (_baixar_simulado or _simulador_2022)(municipios)
     ufs = ufs_governador_de(baixar(URL_CONFIG_GOVERNADOR_T2, forcar=True))
     log.info("2º turno de governador em: %s", ", ".join(ufs))
     coletor = Coletor(municipios, ufs, _baixar=baixar, max_por_ciclo=args.max_por_ciclo)
