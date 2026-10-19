@@ -19,7 +19,7 @@ const partes = (nota: string) => nota.split(URL_RE).filter((p) => p !== '');
     <h2>Volatilidade de Pedersen</h2>
     <p>É um número único que resume o quanto o voto de uma cidade mudou entre duas eleições. Soma-se quanto cada partido ganhou ou perdeu (em pontos percentuais, sem considerar o sinal) e divide-se por dois, porque o que um partido ganha, outro perde.</p>
     <p class="formula">Volatilidade = ½ × soma de |% em 2026 − % em 2022|</p>
-    <p>Vai de 0 (a cidade votou exatamente igual) a 100 (nenhum partido manteve nenhum voto). Exemplo: se A sobe de 40% para 50% e B cai de 60% para 50%, a soma das diferenças é 10 + 10 = 20, e a volatilidade é 10. Ela só é calculada quando há dados válidos nas duas eleições.</p>
+    <p>Vai de 0 (a cidade votou exatamente igual) a 100 (nenhum partido manteve nenhum voto). Exemplo: se A sobe de 40% para 50% e B cai de 60% para 50%, a soma das diferenças é 10 + 10 = 20, e a volatilidade é 10. Ela só é calculada quando há dados válidos nas duas eleições. Na volatilidade, um partido que aparece em apenas um dos anos conta como 0% no outro; na tabela e nos gráficos ele continua aparecendo como "não disputou".</p>
 
     <h2>Tabela de equivalências entre partidos</h2>
     <p>Alguns partidos mudaram de nome, se fundiram ou foram incorporados entre 2022 e 2026. Para comparar o mesmo grupo político nas duas eleições, os votos de 2022 da sigla de origem são somados à sigla atual de destino.</p>

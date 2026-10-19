@@ -3,8 +3,7 @@
 // Os valores vêm dos tokens aprovados (styles/tokens.css); aqui os hex servem aos testes
 // e à geração de imagens. As funções públicas devolvem referências CSS (var(--sN)),
 // que respeitam o modo escuro.
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+// Módulo puro (seguro para o navegador): a leitura dos arquivos fica em ordemPartidos.ts.
 
 export const PALETA_CLARA = [
   '#e86518', '#703dc6', '#952342', '#245fd4', '#35b4a7', '#0e5794', '#983e1b', '#45aade',
@@ -47,31 +46,13 @@ export function criarCores(ordem: string[]) {
   };
 }
 
-type LinhaComparacao = { partidos?: { partido: string; pct_2026: number | null }[] };
+let padrao = criarCores([]);
 
-function partidosPorVoto(arquivo: string): string[] {
-  const dados = JSON.parse(readFileSync(arquivo, 'utf-8')) as LinhaComparacao;
-  return [...(dados.partidos ?? [])]
-    .filter((l) => l.pct_2026 !== null && l.pct_2026 !== undefined)
-    .sort((a, b) => (b.pct_2026 as number) - (a.pct_2026 as number))
-    .map((l) => l.partido);
+/** Define a ordem nacional usada pelas funções abaixo (chamada por ordemPartidos.ts no build). */
+export function definirOrdem(ordem: string[]): void {
+  padrao = criarCores(ordem);
 }
 
-/** Lê a ordem nacional dos arquivos de comparação. Sem dados, devolve [] (tudo cinza). */
-export function lerOrdemNacional(pastaDados?: string): string[] {
-  const pasta = pastaDados ?? process.env.QMA_DADOS ?? resolve(process.cwd(), '../dados/eleicoes-2026');
-  const comp = resolve(pasta, 'comparacoes');
-  const presidente = resolve(comp, 'br-presidente.json');
-  if (!existsSync(presidente)) return [];
-  const ordem = partidosPorVoto(presidente);
-  const governadores = readdirSync(comp).filter((f) => f.endsWith('-governador.json')).sort();
-  for (const f of governadores) ordem.push(...partidosPorVoto(resolve(comp, f)));
-  return ordem;
-}
-
-let padrao: ReturnType<typeof criarCores> | undefined;
-const doSite = () => (padrao ??= criarCores(lerOrdemNacional()));
-
-export const corDoPartido = (partido: string): string => doSite().corDoPartido(partido);
-export const corDoPartidoMapa = (partido: string): string => doSite().corDoPartidoMapa(partido);
-export const corHex = (partido: string, tema: Tema = 'claro'): string => doSite().corHex(partido, tema);
+export const corDoPartido = (partido: string): string => padrao.corDoPartido(partido);
+export const corDoPartidoMapa = (partido: string): string => padrao.corDoPartidoMapa(partido);
+export const corHex = (partido: string, tema: Tema = 'claro'): string => padrao.corHex(partido, tema);

@@ -49,7 +49,6 @@ const atual = Astro.url.pathname.replace(/\/$/, '') || '/';
     return t ? t === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
   };
   const rotular = () => {
-    alternar.textContent = escuro() ? 'Modo claro' : 'Modo escuro';
     alternar.setAttribute('aria-pressed', String(escuro()));
   };
   alternar.addEventListener('click', () => {

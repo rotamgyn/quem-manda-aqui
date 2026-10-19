@@ -4,6 +4,9 @@ import { resolve } from 'node:path';
 
 const raiz = () => resolve(process.cwd(), '..');
 
+/** Pasta dos dados gerados: `QMA_DADOS` ou `<repo>/dados/eleicoes-2026`. */
+export const pastaDados = () => process.env.QMA_DADOS ?? resolve(raiz(), 'dados/eleicoes-2026');
+
 export type Equivalencia = { origem: string; destino: string; nota: string };
 export type Meta = { gerado_em: string; fonte_2026_dg_hg: string; pct_secoes_br: number };
 
@@ -41,8 +44,7 @@ export function lerEquivalencias(): Equivalencia[] {
 
 /** `meta.json` do pipeline; `null` quando os dados ainda não foram gerados. */
 export function lerMeta(): Meta | null {
-  const pasta = process.env.QMA_DADOS ?? resolve(raiz(), 'dados/eleicoes-2026');
-  const caminho = resolve(pasta, 'meta.json');
+  const caminho = resolve(pastaDados(), 'meta.json');
   return existsSync(caminho) ? (JSON.parse(readFileSync(caminho, 'utf-8')) as Meta) : null;
 }
 

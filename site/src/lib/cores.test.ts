@@ -81,7 +81,7 @@ describe('ordem nacional lida dos arquivos', () => {
     const { mkdtempSync, mkdirSync, writeFileSync } = await import('node:fs');
     const { tmpdir } = await import('node:os');
     const { join } = await import('node:path');
-    const { lerOrdemNacional } = await import('./cores');
+    const { lerOrdemNacional } = await import('./ordemPartidos');
     const base = mkdtempSync(join(tmpdir(), 'qma-'));
     expect(lerOrdemNacional(base)).toEqual([]);
     mkdirSync(join(base, 'comparacoes'));
