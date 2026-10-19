@@ -1,0 +1,55 @@
+---
+import Layout from '../components/Layout.astro';
+import { lerEquivalencias } from '../lib/dados';
+
+const equivalencias = lerEquivalencias();
+const URL_RE = /(https?:\/\/[^\s)]+)/;
+// Separa a nota em texto e link para o endereço oficial, quando houver.
+const partes = (nota: string) => nota.split(URL_RE).filter((p) => p !== '');
+---
+<Layout titulo="Metodologia" descricao="Como comparamos 2022 e 2026 por partido, o que é a volatilidade de Pedersen, como conferimos os totais e quais são as limitações.">
+  <div class="pagina wrap">
+    <h1>Metodologia</h1>
+    <p class="lede">Como chegamos a cada número que aparece no site.</p>
+
+    <h2>Comparação por partido</h2>
+    <p>Para cada município e cargo (presidente e governador, 1º turno), somamos os votos dos candidatos de cada partido ou federação e dividimos pelos <strong>votos válidos</strong> (que não incluem brancos e nulos). O resultado é a porcentagem do partido naquele município. A diferença entre 2026 e 2022 é dada em <strong>pontos percentuais</strong> (p.p.): se um partido foi de 30% para 35%, a diferença é de +5 p.p.</p>
+    <p>Um partido que só aparece em um dos anos fica com o outro lado em branco ("não disputou"), e não com 0%.</p>
+
+    <h2>Volatilidade de Pedersen</h2>
+    <p>É um número único que resume o quanto o voto de uma cidade mudou entre duas eleições. Soma-se quanto cada partido ganhou ou perdeu (em pontos percentuais, sem considerar o sinal) e divide-se por dois, porque o que um partido ganha, outro perde.</p>
+    <p class="formula">Volatilidade = ½ × soma de |% em 2026 − % em 2022|</p>
+    <p>Vai de 0 (a cidade votou exatamente igual) a 100 (nenhum partido manteve nenhum voto). Exemplo: se A sobe de 40% para 50% e B cai de 60% para 50%, a soma das diferenças é 10 + 10 = 20, e a volatilidade é 10. Ela só é calculada quando há dados válidos nas duas eleições.</p>
+
+    <h2>Tabela de equivalências entre partidos</h2>
+    <p>Alguns partidos mudaram de nome, se fundiram ou foram incorporados entre 2022 e 2026. Para comparar o mesmo grupo político nas duas eleições, os votos de 2022 da sigla de origem são somados à sigla atual de destino.</p>
+    <div class="tabela-rolagem">
+      <table class="tabela">
+        <caption class="sr">Equivalências entre siglas de 2022 e siglas atuais</caption>
+        <thead><tr><th scope="col">Sigla em 2022</th><th scope="col">Sigla atual</th><th scope="col">Nota e fonte</th></tr></thead>
+        <tbody>
+          {equivalencias.map((e) => (
+            <tr>
+              <th scope="row">{e.origem}</th>
+              <td>{e.destino}</td>
+              <td>{partes(e.nota).map((p) => URL_RE.test(p) ? <a href={p} rel="noopener">{p}</a> : p)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+
+    <h2>Conferência de totais</h2>
+    <p>Antes de publicar, somamos os votos de todos os municípios e comparamos com os totais oficiais de cada estado e do país divulgados pelo TSE. Se qualquer total divergir, os dados não são gerados e nada vai ao ar.</p>
+
+    <h2>Limitações</h2>
+    <ul>
+      <li>Os dados de 2026 vêm do TSE e podem mudar até a totalização final; cada página mostra o percentual de seções apuradas e a data da coleta.</li>
+      <li>Municípios criados depois de 2022 não têm comparação: aparece "sem dados de 2022".</li>
+      <li>Comparamos o voto no candidato, não a preferência do eleitor por um partido: eleitores votam em pessoas, e alianças mudam de uma eleição para outra.</li>
+      <li>Porcentagens são arredondadas para duas casas; a soma pode não dar exatamente 100%.</li>
+      <li>Brancos, nulos e abstenções ficam fora dos percentuais por partido.</li>
+      <li>O voto no exterior entra apenas nos totais de presidente.</li>
+    </ul>
+  </div>
+</Layout>

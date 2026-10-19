@@ -1,17 +1,66 @@
 ---
+import Layout from '../components/Layout.astro';
+import BuscaMunicipio from '../components/BuscaMunicipio.astro';
 
+const emBreve = [
+  { nome: 'Monitor do Congresso', texto: 'Como votou cada deputado e senador do seu estado.' },
+  { nome: 'Gastos dos parlamentares', texto: 'Cota parlamentar, verba de gabinete e viagens, por mandato.' },
+  { nome: 'Rumo a 2028/2030', texto: 'Prefeitos, vereadores e a próxima eleição geral.' },
+  { nome: 'Dinheiro das campanhas', texto: 'Quem doou, quanto veio do fundo eleitoral e onde foi gasto.' },
+  { nome: 'Governo eleito', texto: 'Promessas de campanha comparadas com o que o governo fizer.' },
+];
 ---
+<Layout
+  titulo="Quem Manda Aqui"
+  descricao="Digite sua cidade e veja em quem ela votou em 2026, e o que mudou desde 2022. Dados oficiais do TSE, comparados por partido."
+>
+  <section class="hero wrap">
+    <h1>
+      <span class="ln">Quem</span><span class="ln">manda</span><span class="ln">aqui<svg class="q" viewBox="0 0 40 64" aria-hidden="true"><use href="#qma-q" /></svg></span>
+    </h1>
+    <p>Digite sua cidade e veja em quem ela votou em 2026, e o que mudou desde 2022.</p>
+    <BuscaMunicipio />
+  </section>
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
-</html>
+  <section class="wrap">
+    <div class="destaque">
+      <div>
+        <h2>Eleições 2026</h2>
+        <p>Presidente e governador, em todos os 5.571 municípios. Para cada cidade, quanto cada partido ganhou ou perdeu em relação a 2022.</p>
+      </div>
+      <a class="btn" href="/metodologia">Como comparamos</a>
+    </div>
+  </section>
+
+  <section class="breve wrap">
+    <h2>Em breve</h2>
+    <p>O mesmo jeito de olhar, aplicado a outros poderes.</p>
+    <ul>
+      {emBreve.map((m) => <li><b>{m.nome}</b><em>em breve</em><span>{m.texto}</span></li>)}
+    </ul>
+  </section>
+</Layout>
+
+<style>
+  .hero { padding-top: 2.25rem; padding-bottom: 2rem; }
+  h1 { font-family: var(--f-display); font-stretch: 125%; font-weight: 900; letter-spacing: -0.02em; line-height: 0.95; font-size: var(--t-hero); margin: 0; }
+  h1 .ln { display: block; }
+  h1 svg.q { height: 0.9em; width: auto; vertical-align: -0.04em; margin-left: 0.02em; }
+  .hero p { font-size: var(--t-m); line-height: 1.4; max-width: 34ch; margin: 1.1rem 0 1.5rem; color: var(--tinta-2); }
+
+  .destaque { background: var(--tinta); color: var(--inverso); border-radius: var(--r-m); padding: 1.5rem 1.25rem; display: grid; gap: 1rem; }
+  .destaque h2 { font-family: var(--f-display); font-stretch: 125%; font-weight: 900; font-size: var(--t-2xl); line-height: 0.95; margin: 0 0 0.6rem; letter-spacing: -0.02em; }
+  .destaque p { margin: 0; max-width: 46ch; opacity: 0.86; }
+  .btn { justify-self: start; display: inline-flex; align-items: center; min-height: 48px; padding: 0 1.2rem; background: var(--inverso); color: var(--tinta); border-radius: 999px; font-weight: 700; text-decoration: none; }
+  .btn:focus-visible { outline-color: var(--inverso); }
+  @media (min-width: 760px) { .destaque { grid-template-columns: 1.3fr 1fr; align-items: end; padding: 2rem; } .btn { justify-self: end; } }
+
+  .breve { padding-top: 2.25rem; padding-bottom: 1rem; }
+  .breve h2 { font-family: var(--f-display); font-stretch: 112%; font-weight: 800; font-size: var(--t-l); margin: 0 0 0.25rem; letter-spacing: -0.01em; }
+  .breve > p { margin: 0 0 1rem; color: var(--tinta-2); }
+  .breve ul { list-style: none; margin: 0; padding: 0; border-top: 2px solid var(--tinta); }
+  .breve li { display: grid; grid-template-columns: 1fr auto; gap: 0.25rem 1rem; padding: 1rem 0; border-bottom: 1px solid var(--linha); align-items: baseline; }
+  .breve li b { font-size: var(--t-m); font-weight: 700; }
+  .breve li span { grid-column: 1; color: var(--tinta-2); font-size: var(--t-xs); max-width: 52ch; }
+  .breve li em { grid-row: 1; grid-column: 2; font-style: normal; font-size: var(--t-xs); font-weight: 700; border: 1.5px solid var(--tinta-3); color: var(--tinta-2); border-radius: 999px; padding: 0.1rem 0.6rem; white-space: nowrap; }
+</style>

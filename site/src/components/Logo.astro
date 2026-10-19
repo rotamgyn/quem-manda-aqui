@@ -1,0 +1,9 @@
+---
+// Logo tipográfico: "Quem manda aqui" + interrogação cujo ponto é um marcador de lugar.
+// Requer o <symbol id="qma-q"> definido no Layout.
+---
+<span class="marca" role="img" aria-label="Quem Manda Aqui">Quem manda aqui<svg class="q" viewBox="0 0 40 64" aria-hidden="true"><use href="#qma-q" /></svg></span>
+<style is:global>
+  .marca { display: inline-flex; align-items: baseline; font-family: var(--f-display); font-stretch: 125%; font-weight: 900; letter-spacing: -0.03em; line-height: 1; white-space: nowrap; }
+  .marca svg.q { height: 0.98em; width: auto; margin-left: 0.04em; transform: translateY(0.08em); }
+</style>

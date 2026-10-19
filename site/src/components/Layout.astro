@@ -1,0 +1,51 @@
+---
+import '../styles/tokens.css';
+import '../styles/global.css';
+import Cabecalho from './Cabecalho.astro';
+import Rodape from './Rodape.astro';
+
+interface Props { titulo: string; descricao: string; imagemOg?: string }
+const { titulo, descricao, imagemOg } = Astro.props;
+const nome = 'Quem Manda Aqui';
+const tituloCompleto = titulo === nome ? nome : `${titulo} — ${nome}`;
+const tokenCf = import.meta.env.PUBLIC_CF_ANALYTICS_TOKEN;
+const og = imagemOg ? new URL(imagemOg, Astro.site ?? Astro.url).href : undefined;
+---
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{tituloCompleto}</title>
+    <meta name="description" content={descricao} />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="pt_BR" />
+    <meta property="og:site_name" content={nome} />
+    <meta property="og:title" content={tituloCompleto} />
+    <meta property="og:description" content={descricao} />
+    {og && <meta property="og:image" content={og} />}
+    <meta name="twitter:card" content={og ? 'summary_large_image' : 'summary'} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preload" href="/fontes/AtkinsonHyperlegible-Regular.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fontes/ArchivoExpanded-Black.woff2" as="font" type="font/woff2" crossorigin />
+    <meta name="generator" content={Astro.generator} />
+    <script is:inline>
+      try { var t = localStorage.getItem('qma-tema'); if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+    </script>
+    {tokenCf && <script is:inline defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon={JSON.stringify({ token: tokenCf })}></script>}
+  </head>
+  <body>
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+      <defs>
+        <symbol id="qma-q" viewBox="0 0 40 64">
+          <path d="M9 19.5A11 11 0 1 1 26.3 28.5C21.8 31.6 20 34 20 38.5V42" fill="none" stroke="currentColor" stroke-width="12" />
+          <path d="M20 63.5C18.4 60.8 12.6 56.4 12.6 51.2a7.4 7.4 0 0 1 14.8 0c0 5.2-5.8 9.6-7.4 12.3Zm0-9.6a2.7 2.7 0 1 0 0-5.4 2.7 2.7 0 0 0 0 5.4Z" fill="currentColor" fill-rule="evenodd" />
+        </symbol>
+      </defs>
+    </svg>
+    <a class="pular" href="#conteudo">Pular para o conteúdo</a>
+    <Cabecalho />
+    <main id="conteudo"><slot /></main>
+    <Rodape />
+  </body>
+</html>

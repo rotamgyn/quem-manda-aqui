@@ -1,0 +1,63 @@
+---
+import Logo from './Logo.astro';
+const itens = [
+  { href: '/', rotulo: 'Início' },
+  { href: '/metodologia', rotulo: 'Metodologia' },
+  { href: '/fontes', rotulo: 'Fontes' },
+  { href: '/sobre', rotulo: 'Sobre' },
+];
+const atual = Astro.url.pathname.replace(/\/$/, '') || '/';
+---
+<header class="cab">
+  <div class="wrap cab-in">
+    <a class="cab-logo" href="/" aria-label="Quem Manda Aqui, página inicial"><Logo /></a>
+    <button class="menu-btn" type="button" aria-expanded="false" aria-controls="menu-principal">Menu</button>
+    <nav id="menu-principal" class="menu" aria-label="Principal">
+      {itens.map((i) => <a href={i.href} aria-current={atual === i.href ? 'page' : undefined}>{i.rotulo}</a>)}
+    </nav>
+    <button class="tema" id="alternar-tema" type="button" aria-pressed="false">Modo escuro</button>
+  </div>
+</header>
+<style>
+  .cab { background: var(--cartao); border-bottom: 1px solid var(--linha); }
+  .cab-in { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 1.25rem; min-height: 60px; padding-top: 0.4rem; padding-bottom: 0.4rem; }
+  .cab-logo { text-decoration: none; font-size: 1.15rem; margin-right: auto; }
+  .menu { display: none; flex-basis: 100%; order: 5; flex-direction: column; gap: 0.25rem; font-size: var(--t-s); font-weight: 700; padding-bottom: 0.5rem; }
+  .menu.aberto { display: flex; }
+  .menu a { text-decoration: none; min-height: 44px; display: inline-flex; align-items: center; }
+  .menu a[aria-current="page"] { text-decoration: underline; }
+  .menu-btn, .tema { font: inherit; font-weight: 700; font-size: var(--t-xs); color: var(--tinta); background: transparent; cursor: pointer; min-height: 44px; }
+  .menu-btn { border: 0; padding: 0 0.25rem; }
+  .tema { border: 2px solid var(--tinta); border-radius: 999px; padding: 0.35rem 0.9rem; min-height: 40px; }
+  @media (min-width: 760px) {
+    .menu { display: flex; flex-basis: auto; flex-direction: row; order: 0; gap: 1.25rem; padding: 0; font-size: var(--t-xs); }
+    .menu-btn { display: none; }
+  }
+</style>
+<script>
+  const btn = document.querySelector<HTMLButtonElement>('.menu-btn');
+  const menu = document.getElementById('menu-principal');
+  btn?.addEventListener('click', () => {
+    const aberto = menu?.classList.toggle('aberto') ?? false;
+    btn.setAttribute('aria-expanded', String(aberto));
+  });
+
+  const raiz = document.documentElement;
+  const alternar = document.getElementById('alternar-tema') as HTMLButtonElement;
+  const escuro = () => {
+    const t = raiz.getAttribute('data-theme');
+    return t ? t === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  };
+  const rotular = () => {
+    alternar.textContent = escuro() ? 'Modo claro' : 'Modo escuro';
+    alternar.setAttribute('aria-pressed', String(escuro()));
+  };
+  alternar.addEventListener('click', () => {
+    const novo = escuro() ? 'light' : 'dark';
+    raiz.setAttribute('data-theme', novo);
+    try { localStorage.setItem('qma-tema', novo); } catch {}
+    rotular();
+  });
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', rotular);
+  rotular();
+</script>

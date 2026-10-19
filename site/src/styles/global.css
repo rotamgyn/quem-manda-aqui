@@ -1,0 +1,26 @@
+* { box-sizing: border-box; }
+html { font-size: 106.25%; -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--papel); color: var(--tinta); font-family: var(--f-texto); font-size: var(--t-s); line-height: 1.5; }
+a { color: inherit; text-underline-offset: 0.18em; text-decoration-thickness: 2px; }
+:focus-visible { outline: 3px solid var(--foco); outline-offset: 3px; border-radius: 2px; }
+.wrap { max-width: var(--largura); margin: 0 auto; padding: 0 var(--gutter); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.pular { position: absolute; left: var(--gutter); top: -4rem; background: var(--tinta); color: var(--inverso); padding: 0.6rem 1rem; z-index: 20; border-radius: var(--r-s); }
+.pular:focus { top: 0.5rem; }
+.nota { font-size: var(--t-xs); color: var(--tinta-3); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+/* Páginas de texto */
+.pagina { padding: 2.5rem 0 1rem; }
+.pagina h1 { font-family: var(--f-display); font-stretch: 125%; font-weight: 900; font-size: clamp(2rem, 8vw, var(--t-3xl)); line-height: 0.98; letter-spacing: -0.02em; margin: 0 0 1.25rem; }
+.pagina h2 { font-family: var(--f-display); font-stretch: 112%; font-weight: 800; font-size: var(--t-l); line-height: 1.15; letter-spacing: -0.01em; margin: 2.5rem 0 0.6rem; }
+.pagina p, .pagina li { max-width: 65ch; }
+.pagina .lede { font-size: var(--t-m); line-height: 1.4; color: var(--tinta-2); max-width: 46ch; }
+.pagina ul, .pagina ol { padding-left: 1.25rem; }
+.pagina li { margin-bottom: 0.4rem; }
+.tabela-rolagem { overflow-x: auto; margin: 1rem 0; }
+.tabela { width: 100%; border-collapse: collapse; background: var(--cartao); border: 1px solid var(--linha); font-size: var(--t-xs); }
+.tabela th, .tabela td { text-align: left; padding: 0.55rem 0.7rem; border-top: 1px solid var(--linha); vertical-align: top; overflow-wrap: anywhere; }
+.tabela thead th { border-top: 0; color: var(--tinta-2); }
+.manifesto-grande { font-family: var(--f-display); font-stretch: 125%; font-weight: 900; font-size: clamp(1.7rem, 6vw, var(--t-2xl)); line-height: 1; letter-spacing: -0.02em; margin: 0 0 1.5rem; max-width: 22ch; }
+.formula { background: var(--cartao); border: 1px solid var(--linha); border-radius: var(--r-m); padding: 0.9rem 1.1rem; font-size: var(--t-m); max-width: 65ch; overflow-x: auto; }

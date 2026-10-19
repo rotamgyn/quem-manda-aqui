@@ -1,0 +1,53 @@
+/* Identidade visual aprovada (Portão D4). Fontes autohospedadas em /fontes. */
+@font-face { font-family: "Archivo"; src: url("/fontes/ArchivoExpanded-Black.woff2") format("woff2"); font-weight: 900; font-stretch: 125%; font-display: swap; }
+@font-face { font-family: "Archivo"; src: url("/fontes/ArchivoExpanded-ExtraBold.woff2") format("woff2"); font-weight: 800; font-stretch: 125%; font-display: swap; }
+@font-face { font-family: "Archivo"; src: url("/fontes/ArchivoSemiExpanded-ExtraBold.woff2") format("woff2"); font-weight: 800; font-stretch: 112%; font-display: swap; }
+@font-face { font-family: "Atkinson Hyperlegible"; src: url("/fontes/AtkinsonHyperlegible-Regular.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "Atkinson Hyperlegible"; src: url("/fontes/AtkinsonHyperlegible-Italic.woff2") format("woff2"); font-weight: 400; font-style: italic; font-display: swap; }
+@font-face { font-family: "Atkinson Hyperlegible"; src: url("/fontes/AtkinsonHyperlegible-Bold.woff2") format("woff2"); font-weight: 700; font-style: normal; font-display: swap; }
+
+:root {
+  color-scheme: light;
+  --papel: #eef0f3;
+  --cartao: #ffffff;
+  --tinta: #121417;
+  --tinta-2: #4a5059;
+  --tinta-3: #636973;
+  --linha: #d5d9df;
+  --linha-forte: #aeb4bd;
+  --inverso: #ffffff;
+  --foco: #121417;
+  --aviso: #9a3412;
+
+  /* paleta categórica, na ordem de atribuição (ver src/lib/cores.ts) */
+  --s1: #e86518; --s2: #703dc6; --s3: #952342; --s4: #245fd4;
+  --s5: #35b4a7; --s6: #0e5794; --s7: #983e1b; --s8: #45aade;
+  --outros: #868b94;
+
+  --f-display: "Archivo", "Arial Black", system-ui, sans-serif;
+  --f-texto: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --t-xs: 0.8rem; --t-s: 1rem; --t-m: 1.25rem; --t-l: 1.563rem;
+  --t-xl: 1.953rem; --t-2xl: 2.441rem; --t-3xl: 3.052rem;
+  --t-hero: clamp(3.4rem, 15.5vw, 9.5rem);
+
+  --r-s: 4px; --r-m: 10px; --gutter: 16px; --largura: 1080px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --papel: #111316; --cartao: #1b1d21; --tinta: #f2f4f7; --tinta-2: #a9afb8; --tinta-3: #8b919a;
+    --linha: #2e3238; --linha-forte: #474c54; --inverso: #111316; --foco: #f2f4f7; --aviso: #fdba74;
+    --s1: #dc631e; --s2: #8f6ce0; --s3: #b13554; --s4: #4a81eb;
+    --s5: #12a195; --s6: #2e69b2; --s7: #af5331; --s8: #369dd1;
+    --outros: #7d828b;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --papel: #111316; --cartao: #1b1d21; --tinta: #f2f4f7; --tinta-2: #a9afb8; --tinta-3: #8b919a;
+  --linha: #2e3238; --linha-forte: #474c54; --inverso: #111316; --foco: #f2f4f7; --aviso: #fdba74;
+  --s1: #dc631e; --s2: #8f6ce0; --s3: #b13554; --s4: #4a81eb;
+  --s5: #12a195; --s6: #2e69b2; --s7: #af5331; --s8: #369dd1;
+  --outros: #7d828b;
+}

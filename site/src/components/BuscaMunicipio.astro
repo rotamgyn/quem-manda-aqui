@@ -1,0 +1,13 @@
+---
+// SLOT DA TAREFA 13: a busca de município (campo, autocomplete e navegação) substitui
+// este componente. Enquanto isso, não há busca falsa: só um aviso.
+---
+<div class="busca-slot" data-slot="busca-municipio">
+  <p class="busca-titulo">Seu município</p>
+  <p class="busca-aviso">A busca por município chega em breve, junto com as páginas de cada cidade.</p>
+</div>
+<style>
+  .busca-slot { max-width: 640px; border: 3px dashed var(--linha-forte); border-radius: var(--r-m); padding: 1rem 1.1rem; background: var(--cartao); }
+  .busca-titulo { margin: 0 0 0.25rem; font-weight: 700; }
+  .busca-aviso { margin: 0; color: var(--tinta-2); font-size: var(--t-xs); }
+</style>

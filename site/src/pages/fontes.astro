@@ -1,0 +1,46 @@
+---
+import Layout from '../components/Layout.astro';
+import Fonte from '../components/Fonte.astro';
+import { lerMeta, formatarDataHora } from '../lib/dados';
+
+const meta = lerMeta();
+const fontes = [
+  { nome: 'TSE: resultados ao vivo 2026', uso: 'Resultado do 1º turno de 2026 por município; 2º turno ao vivo.', url: 'https://resultados.tse.jus.br/oficial/ele2026/' },
+  { nome: 'TSE: índice de eleições', uso: 'Códigos de cada eleição (1º turno: federal 6257, estadual 6259).', url: 'https://resultados.tse.jus.br/oficial/comum/config/ele-c.json' },
+  { nome: 'TSE: Dados Abertos 2022', uso: 'Votos por município e zona em 2022, comparecimento, abstenção, brancos e nulos.', url: 'https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_candidato_munzona/votacao_candidato_munzona_2022.zip' },
+  { nome: 'TSE: detalhe da votação 2022', uso: 'Comparecimento, abstenção, brancos e nulos em 2022.', url: 'https://cdn.tse.jus.br/estatistica/sead/odsele/detalhe_votacao_munzona/detalhe_votacao_munzona_2022.zip' },
+  { nome: 'TSE: perfil do eleitorado 2026', uso: 'Idade, escolaridade e gênero por município.', url: 'https://cdn.tse.jus.br/estatistica/sead/odsele/perfil_eleitorado/perfil_eleitorado_2026.zip' },
+  { nome: 'IBGE: Censo 2022', uso: 'Renda, urbanização e população por município (API SIDRA e downloads).', url: 'https://sidra.ibge.gov.br/' },
+];
+---
+<Layout titulo="Fontes" descricao="De onde vêm os dados do Quem Manda Aqui: TSE e IBGE, com a data e hora da última coleta.">
+  <div class="pagina wrap">
+    <h1>Fontes</h1>
+    <p class="lede">Todos os dados vêm de fontes oficiais e públicas.</p>
+
+    <h2>Última coleta</h2>
+    {meta ? (
+      <ul>
+        <li>Dados gerados em <time datetime={meta.gerado_em}>{formatarDataHora(meta.gerado_em)}</time> (horário de Brasília).</li>
+        <li>Versão do arquivo de resultados de 2026 do TSE: <code>{meta.fonte_2026_dg_hg}</code> (data e hora de geração do arquivo, fornecidas pelo TSE).</li>
+        <li>Seções totalizadas no Brasil: {meta.pct_secoes_br.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}%.</li>
+      </ul>
+    ) : (
+      <p>Os dados de 2026 ainda não foram gerados nesta versão do site.</p>
+    )}
+
+    <h2>Endereços</h2>
+    <div class="tabela-rolagem">
+      <table class="tabela">
+        <caption class="sr">Fontes de dados</caption>
+        <thead><tr><th scope="col">Fonte</th><th scope="col">Uso</th><th scope="col">Endereço</th></tr></thead>
+        <tbody>
+          {fontes.map((f) => (
+            <tr><th scope="row">{f.nome}</th><td>{f.uso}</td><td><a href={f.url} rel="noopener">{f.url}</a></td></tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+    {meta && <Fonte fonte="TSE (resultados.tse.jus.br e cdn.tse.jus.br) e IBGE" atualizadoEm={meta.gerado_em} />}
+  </div>
+</Layout>

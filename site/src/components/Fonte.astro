@@ -1,0 +1,9 @@
+---
+import { formatarDataHora } from '../lib/dados';
+interface Props { fonte: string; atualizadoEm: string }
+const { fonte, atualizadoEm } = Astro.props;
+---
+<p class="fonte-dado">Fonte: {fonte}. Coletado em <time datetime={atualizadoEm}>{formatarDataHora(atualizadoEm)}</time>.</p>
+<style>
+  .fonte-dado { margin: 1.25rem 0 0; padding-top: 0.9rem; border-top: 1px solid var(--linha); font-size: var(--t-xs); color: var(--tinta-2); }
+</style>
