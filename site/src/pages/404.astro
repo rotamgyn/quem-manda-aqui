@@ -1,0 +1,21 @@
+---
+import Layout from '../components/Layout.astro';
+import BuscaMunicipio from '../components/BuscaMunicipio.astro';
+---
+<Layout titulo="Página não encontrada" descricao="A página procurada não existe no Quem Manda Aqui. Busque sua cidade ou volte à página inicial.">
+  <div class="pagina wrap">
+    <h1>Página não encontrada</h1>
+    <p class="lede">O endereço pode ter mudado ou estar digitado errado.</p>
+    <p>Procure sua cidade:</p>
+    <BuscaMunicipio id="busca-404" />
+    <ul class="saidas">
+      <li><a href="/">Voltar à página inicial</a></li>
+      <li><a href="/eleicoes-2026/">Eleições 2026</a></li>
+      <li><a href="/eleicoes-2026/municipios/">Municípios por estado</a></li>
+    </ul>
+  </div>
+</Layout>
+<style>
+  .saidas { list-style: none; padding: 0; margin-top: 1.5rem; }
+  .saidas a { display: inline-flex; align-items: center; min-height: 44px; font-weight: 700; }
+</style>
