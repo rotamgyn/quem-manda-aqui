@@ -43,3 +43,18 @@ def test_faixas_de_porte():
     assert [porte(n) for n in (10000, 10001, 50000, 50001, 200000, 200001)] == [
         "ate10k", "10a50k", "10a50k", "50a200k", "50a200k", "mais200k",
     ]  # fmt: skip
+
+
+def test_agregados_2022_t2_por_br_e_uf():
+    m = Municipio("01120", "1200013", "ACRELÂNDIA", "AC", False, "acrelandia")
+    br = _res(2022, 2, "BR", None, 100, [("A", "PTB", 2), ("B", "PT", 2), ("C", "PATRIOTA", 4)])
+    gov = _res(2022, 2, "AC", None, 100, [("A", "PL", 3), ("B", "PT", 1)], cargo="governador")
+    mun = _res(2022, 2, "AC", "01120", 100, [("A", "PL", 1)], cargo="governador")
+    base = gerar_base([br, gov, mun], [], [m], {"PTB": "PRD", "PATRIOTA": "PRD"})
+    ag = base["agregados_2022_t2"]
+    assert ag["presidente"]["BR"] == {
+        "validos": 8, "votos": {"PRD": 6, "PT": 2}, "partidos": {"PRD": 75.0, "PT": 25.0}
+    }
+    assert ag["governador"] == {
+        "AC": {"validos": 4, "votos": {"PL": 3, "PT": 1}, "partidos": {"PL": 75.0, "PT": 25.0}}
+    }

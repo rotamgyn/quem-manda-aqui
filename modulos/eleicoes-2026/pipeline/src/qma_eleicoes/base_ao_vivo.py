@@ -32,6 +32,27 @@ def _presidente_por_municipio(resultados: list[Resultado]) -> dict[tuple[str, st
     }
 
 
+def _agregado(r: Resultado, equivalencias: dict[str, str]) -> dict:
+    """Votos válidos e votos/percentual por partido (equivalências aplicadas)."""
+    votos: dict[str, int] = defaultdict(int)
+    for c in r.candidatos:
+        votos[equivalencias.get(c.partido, c.partido)] += c.votos
+    return {
+        "validos": r.validos,
+        "votos": dict(votos),
+        "partidos": _partidos(r, equivalencias),
+    }
+
+
+def agregados_2022_t2(r2022_t2: list[Resultado], equivalencias: dict[str, str]) -> dict:
+    """Agregados de BR e UFs do 2º turno de 2022: presidente por BR/UF, governador por UF."""
+    saida: dict[str, dict] = {"presidente": {}, "governador": {}}
+    for r in sorted(r2022_t2, key=lambda r: r.uf):
+        if r.municipio_tse is None and r.cargo in saida:
+            saida[r.cargo][r.uf] = _agregado(r, equivalencias)
+    return saida
+
+
 def gerar_base(
     r2022_t2: list[Resultado],
     r2026_t1: list[Resultado],
@@ -74,4 +95,7 @@ def gerar_base(
                 else None
             ),
         }
-    return {"municipios": saida}
+    return {
+        "municipios": saida,
+        "agregados_2022_t2": agregados_2022_t2(r2022_t2, equivalencias),
+    }
