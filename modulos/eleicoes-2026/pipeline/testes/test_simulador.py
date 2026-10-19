@@ -256,3 +256,16 @@ def test_inicio_simulado_define_dg_hg(r2022):
 def test_poucos_passos_rejeitado(r2022):
     with pytest.raises(ValueError):
         list(gerar_sequencia(r2022, passos=2))
+
+
+def test_ordem_personalizada_define_quem_apura_primeiro(r2022):
+    """`ordem` (menor = antes) substitui porte/capitais: aqui, maior % do PT primeiro."""
+    def pct_pt(r):
+        return -next(c.votos for c in r.candidatos if c.partido == "PT") / r.validos
+
+    pres = [r for r in r2022 if r.cargo == "presidente" and r.municipio_tse]
+    primeiro = min(pres, key=pct_pt)
+    ultimo = max(pres, key=pct_pt)
+    p0 = dict(next(iter(gerar_sequencia(r2022, passos=12, semente=1, ordem=pct_pt))).items())
+    assert url_resultado_2026("presidente", primeiro.uf.lower(), primeiro.municipio_tse, "6258") in p0
+    assert url_resultado_2026("presidente", ultimo.uf.lower(), ultimo.municipio_tse, "6258") not in p0

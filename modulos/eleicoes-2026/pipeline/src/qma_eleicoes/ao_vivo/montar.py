@@ -96,6 +96,7 @@ def _municipio(tse: str, info: dict, r: Resultado | None, horario: str | None) -
         "status": "aguardando",
         "vencedor": None,
         "partidos": None,
+        "validos": None,  # votos válidos já apurados no município (base da projeção)
         "delta_vs_2022": None,
         "horario_tse": horario if r else None,
     }
@@ -105,6 +106,7 @@ def _municipio(tse: str, info: dict, r: Resultado | None, horario: str | None) -
     item["status"] = "completo" if r.pct_secoes_totalizadas >= 100 else "parcial"
     item["vencedor"] = _vencedor(votos)
     item["partidos"] = {p: _pct(v, r.validos) for p, v in votos.items()}
+    item["validos"] = r.validos
     anterior = (info.get("t2_2022") or {}).get("partidos")
     if anterior:
         item["delta_vs_2022"] = {
@@ -141,13 +143,20 @@ def montar(
         else:
             estado["presidente"]["ufs"][uf.lower()] = item
 
+    saida: dict[str, dict | list] = {"ao-vivo/estado.json": estado}
+    for uf, lista in sorted(municipios_por_uf(resultados, horarios, base).items()):
+        saida[f"ao-vivo/municipios/{uf}.json"] = lista
+    return saida
+
+
+def municipios_por_uf(
+    resultados: dict[Chave, Resultado], horarios: dict[Chave, str], base: dict
+) -> dict[str, list[dict]]:
+    """Itens municipais (presidente) por UF minúscula, na ordem do código TSE."""
     por_uf: dict[str, list[dict]] = defaultdict(list)
     for tse, info in sorted(base["municipios"].items()):
         chave = ("presidente", info["uf"], tse)
         por_uf[info["uf"].lower()].append(
             _municipio(tse, info, resultados.get(chave), horarios.get(chave))
         )
-    saida: dict[str, dict | list] = {"ao-vivo/estado.json": estado}
-    for uf, lista in sorted(por_uf.items()):
-        saida[f"ao-vivo/municipios/{uf}.json"] = lista
-    return saida
+    return dict(por_uf)

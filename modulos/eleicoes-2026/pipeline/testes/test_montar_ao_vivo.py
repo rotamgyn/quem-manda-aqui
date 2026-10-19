@@ -72,6 +72,7 @@ def test_municipio_sem_apuracao():
     for m in lista:
         assert m["status"] == "aguardando"
         assert m["partidos"] is None and m["vencedor"] is None and m["delta_vs_2022"] is None
+        assert m["validos"] is None
     assert lista[1]["horario_tse"] is None and lista[1]["pct_secoes"] == 0
     assert lista[0]["ibge"] == "5200050"
 
@@ -82,6 +83,7 @@ def test_municipio_parcial_completo_empate_e_delta():
     m = next(x for x in saida["ao-vivo/municipios/go.json"] if x["tse"] == "93734")
     assert m["status"] == "parcial" and m["vencedor"] == "PT"
     assert m["partidos"] == {"PT": 55.0, "PL": 45.0}
+    assert m["validos"] == 100  # votos válidos já apurados (base da projeção)
     assert m["delta_vs_2022"] == {"PT": 15.0, "PL": -15.0}
     completo = _res("presidente", "GO", "93734", [("A", "PT", 50), ("B", "PL", 50)], pct=100.0)
     m = next(

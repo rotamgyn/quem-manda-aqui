@@ -51,12 +51,17 @@ def _porte_ordem(m: Resultado, capitais: Collection[tuple[str, str]]) -> float:
 
 
 def _inicios(
-    municipais: list[Resultado], passos: int, semente: int, capitais: Collection[tuple[str, str]]
+    municipais: list[Resultado],
+    passos: int,
+    semente: int,
+    capitais: Collection[tuple[str, str]],
+    ordem: Callable[[Resultado], float] | None = None,
 ) -> dict[tuple[str, str], int]:
     """Passo de início de cada município (presidente e governador compartilham as seções).
 
     A ordem vem do porte (capitais e menores primeiro) com um deslocamento por UF sorteado
-    pela semente; as posições são normalizadas para ocupar todo o intervalo [0, passos-3],
+    pela semente (ou de `ordem`, se dada: menor = antes, sem capitais nem deslocamento por UF,
+    usando o resultado de presidente quando houver); as posições são normalizadas para ocupar todo o intervalo [0, passos-3],
     de modo que o último passo tenha ao menos um município terminando.
     """
     ufs = sorted({m.uf for m in municipais})
@@ -66,13 +71,16 @@ def _inicios(
     deslocamento_uf = {uf: i / max(len(ufs), 1) for i, uf in enumerate(ordem_uf)}
 
     unicos: dict[tuple[str, str], Resultado] = {}
-    for m in municipais:
+    for m in sorted(municipais, key=lambda m: m.cargo != "presidente"):
         unicos.setdefault((m.uf, m.municipio_tse), m)
     maior = max((m.aptos for m in unicos.values()), default=1) or 1
     pontos = {}
     for chave, m in unicos.items():
-        ordem = _porte_ordem(m, capitais)
-        porte = 0.0 if ordem < 0 else 0.1 + 0.9 * (ordem / maior) ** 0.5
+        if ordem is not None:
+            pontos[chave] = ordem(m)
+            continue
+        posicao = _porte_ordem(m, capitais)
+        porte = 0.0 if posicao < 0 else 0.1 + 0.9 * (posicao / maior) ** 0.5
         pontos[chave] = 0.8 * porte + 0.2 * deslocamento_uf[m.uf] + sorteio.random() * 0.01
     ranking = sorted(pontos, key=lambda c: (pontos[c], c))
     ultimo = max(len(ranking) - 1, 1)
@@ -234,19 +242,21 @@ def gerar_sequencia(
     capitais: Collection[tuple[str, str]] = (),
     municipios_2026: Collection[tuple[str, str]] = (),
     inicio: datetime = INICIO,
+    ordem: Callable[[Resultado], float] | None = None,
 ) -> Iterator[dict[str, dict]]:
     """Gera `passos` retratos da apuração; cada um é `{url: arquivo}`.
 
     `capitais`: pares (UF, código TSE) apurados primeiro. `municipios_2026`: pares (UF, TSE)
     de todos os municípios de 2026; os ausentes de 2022 e os ainda não apurados têm arquivo
-    zerado (como o feed do TSE), nunca 404. `inicio`: relógio simulado do passo 0. O último passo reproduz
+    zerado (como o feed do TSE), nunca 404. `inicio`: relógio simulado do passo 0. `ordem`:
+    chave de apuração por município (menor = antes; backtest com ordens adversas). O último passo reproduz
     exatamente o resultado oficial. O gerador é preguiçoso: arquivos de municípios já
     concluídos são reaproveitados (mesmo objeto) e nada além do passo atual é mantido.
     """
     if passos < len(FRACOES):
         raise ValueError(f"passos deve ser >= {len(FRACOES)}")
     municipais_r = [r for r in r2022_t2 if r.municipio_tse is not None]
-    inicios = _inicios(municipais_r, passos, semente, capitais)
+    inicios = _inicios(municipais_r, passos, semente, capitais, ordem)
     municipais = [
         _Municipio(r.cargo, r.uf, r.municipio_tse, inicios[(r.uf, r.municipio_tse)], r)
         for r in municipais_r

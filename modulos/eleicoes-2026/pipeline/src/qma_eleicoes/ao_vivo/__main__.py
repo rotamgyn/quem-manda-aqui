@@ -14,8 +14,10 @@ from qma_comum.http import baixar_json
 from qma_comum.municipios import Municipio
 
 from ..config import URL_CONFIG_GOVERNADOR_T2
+from ..projecao import bloco_projecao, ler_aprovacao
 from .coleta import Coletor, ufs_governador_de
-from .laco import FUSO, executar
+from .laco import FUSO, ProjetarBloco, executar
+from .montar import municipios_por_uf
 from .publicar import PREFIXO_PADRAO, PublicadorLocal, PublicadorR2
 
 log = logging.getLogger("qma_eleicoes.ao_vivo")
@@ -66,6 +68,18 @@ def _simulador_2022(municipios: list[Municipio], inicio: datetime | None = None)
     )
 
 
+def _gancho_projecao(coletor, base: dict, aprovado: bool) -> ProjetarBloco:
+    """Gancho do laço: bloco `projecao` a partir dos municípios do coletor (Tarefa 5)."""
+
+    def projetar_bloco(estado: dict, controle: dict, agora: datetime) -> dict | None:
+        if not aprovado:
+            return None
+        por_uf = municipios_por_uf(coletor.resultados, coletor.horarios, base)
+        return bloco_projecao(por_uf, base, controle, agora, aprovado)
+
+    return projetar_bloco
+
+
 def main(
     argv: list[str] | None = None,
     *,
@@ -73,7 +87,8 @@ def main(
     _projetar_bloco: Callable | None = None,
 ) -> int:
     """`_baixar_simulado(municipios, inicio)` devolve o `_baixar` do `--simular` (padrão: o simulador
-    sobre o 2º turno de 2022); `_projetar_bloco` é o gancho da projeção (Tarefa 5)."""
+    sobre o 2º turno de 2022); `_projetar_bloco` substitui o gancho da projeção (padrão: projeção
+    com `dados/eleicoes-2026/backtest-aprovado.json`)."""
     args = _parser().parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     logging.getLogger("httpx").setLevel(logging.WARNING)
@@ -100,9 +115,11 @@ def main(
         publicador = PublicadorR2.do_ambiente(args.prefixo)
     log.info("publicando em %s (prefixo %r)", args.local or "R2", publicador.prefixo)
 
+    aprovado = ler_aprovacao(args.dados / "eleicoes-2026" / "backtest-aprovado.json")
+    log.info("projeção: backtest %s", "aprovado" if aprovado else "NÃO aprovado (projeção desligada)")
     ciclos = executar(
         coletor, base, publicador, intervalo=args.intervalo, ate=args.ate,
-        projetar_bloco=_projetar_bloco,
+        projetar_bloco=_projetar_bloco or _gancho_projecao(coletor, base, aprovado),
     )  # fmt: skip
     log.info("encerrado após %d ciclos", ciclos)
     return 0
