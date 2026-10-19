@@ -6,7 +6,7 @@ import BarrasComparativas from '../../../components/BarrasComparativas.astro';
 import Mapa from '../../../components/Mapa.astro';
 import { UFS, lerComparacao, lerMetaObrigatoria, lerMunicipiosUF } from '../../../lib/dados';
 import { urlOg } from '../../../lib/cartao';
-import { nomeUF } from '../../../lib/formato';
+import { nomeUF, sigla2022 } from '../../../lib/formato';
 import { coresDoMapa, corNoMapa } from '../../../lib/cores';
 import type { Resultado } from '../../../lib/tipos';
 import { montarLegenda, rotuloVencedor } from '../../../lib/mapa';
@@ -38,7 +38,9 @@ for (const m of municipios) {
   const pct = (r: Resultado | null, v: string | null) => r?.candidatos.find((x) => x.partido === v)?.pct ?? null;
   m22.cores[m.ibge] = v22 ? corNoMapa(paleta, v22) : 'var(--outros)';
   m26.cores[m.ibge] = v26 ? corNoMapa(paleta, v26) : 'var(--outros)';
-  m22.rotulos[m.ibge] = rotuloVencedor(m.nome, 2022, v22, pct(g?.r2022 ?? null, v22));
+  // 2022: sigla original ("PSC (hoje PODE)") e % da linha do partido, que já soma siglas convertidas
+  const l22 = v22 ? g?.partidos.find((l) => l.partido === v22) : undefined;
+  m22.rotulos[m.ibge] = rotuloVencedor(m.nome, 2022, v22 && sigla2022(l22, v22), l22?.pct_2022 ?? null);
   m26.rotulos[m.ibge] = rotuloVencedor(m.nome, 2026, v26, pct(g?.r2026 ?? null, v26));
   if (g?.virou === true) virou.push(m.ibge);
   if (!v22) sem2022.push(m.ibge);

@@ -1,6 +1,6 @@
 ---
 import { corEm, coresPorPosicao } from '../lib/cores';
-import { pct, pp } from '../lib/formato';
+import { notasSiglas2022, pct, pp } from '../lib/formato';
 import type { LinhaPartido } from '../lib/tipos';
 
 interface Props {
@@ -13,6 +13,7 @@ interface Props {
 }
 const { linhas, legenda, anulados2026 = [] } = Astro.props;
 const cores = Astro.props.cores ?? coresPorPosicao(linhas);
+const siglas = notasSiglas2022(linhas);
 ---
 <div class="tabela-rolagem">
   <table class="tabela comparativa">
@@ -32,7 +33,7 @@ const cores = Astro.props.cores ?? coresPorPosicao(linhas);
     </tbody>
   </table>
 </div>
-<p class="nota">Porcentagem dos votos válidos. A variação é a diferença em pontos percentuais (p.p.) calculada pelo pipeline; sem comparação quando o partido não concorreu nos dois anos.</p>
+<p class="nota">Porcentagem dos votos válidos. A variação é a diferença em pontos percentuais (p.p.) calculada pelo pipeline; sem comparação quando o partido não concorreu nos dois anos.{siglas.length > 0 && <> Siglas que mudaram desde 2022 (<a href="/metodologia">equivalências</a>): {siglas.join('; ')}.</>}</p>
 <style>
   .comparativa .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
   .comparativa th[scope="row"] { font-weight: 700; white-space: nowrap; }

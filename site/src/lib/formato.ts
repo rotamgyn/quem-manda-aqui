@@ -1,5 +1,5 @@
 // Formatação pt-BR de números. Módulo puro (seguro para o navegador).
-import type { Resultado, VotoCandidato } from './tipos';
+import type { LinhaPartido, Resultado, VotoCandidato } from './tipos';
 
 const MENOS = '−'; // sinal de menos tipográfico
 
@@ -51,6 +51,23 @@ export function notaAnulados(r: Partial<Pick<Resultado, 'anulados'>>): string | 
   if (lista.length === 0) return null;
   const itens = lista.map((c) => `${c.nome_urna} (${c.partido}), ${inteiro(c.votos)} ${c.votos === 1 ? 'voto' : 'votos'}`);
   return `Votos anulados (inclusive sub judice): ${itens.join('; ')} — não entram nos percentuais nem nos votos válidos.`;
+}
+
+type Siglas = Pick<LinhaPartido, 'partido' | 'siglas_2022'>;
+const converteu = (l: Siglas) => l.siglas_2022.length > 0 && !(l.siglas_2022.length === 1 && l.siglas_2022[0] === l.partido);
+
+/**
+ * Sigla com que a linha concorreu em 2022: "PSC (hoje PODE)", "PATRIOTA + PTB (hoje PRD)" ou só "PL".
+ * Sem linha, usa `reserva`.
+ */
+export function sigla2022(l: Siglas | undefined, reserva = ''): string {
+  if (!l) return reserva;
+  return converteu(l) ? `${l.siglas_2022.join(' + ')} (hoje ${l.partido})` : l.partido;
+}
+
+/** Notas para tabelas: "PRD em 2022 = PATRIOTA + PTB", uma por linha que soma siglas convertidas. */
+export function notasSiglas2022(linhas: Siglas[]): string[] {
+  return linhas.filter(converteu).map((l) => `${l.partido} em 2022 = ${l.siglas_2022.join(' + ')}`);
 }
 
 /**

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { inteiro, nomeProprio, nomeUF, notaAnulados, pct, pctSecoes, pp, rotuloSituacao } from './formato';
+import { inteiro, nomeProprio, nomeUF, notaAnulados, notasSiglas2022, pct, pctSecoes, pp, rotuloSituacao, sigla2022 } from './formato';
 
 describe('formato', () => {
   test('pct usa vírgula e duas casas; null vira travessão', () => {
@@ -68,5 +68,21 @@ describe('pctSecoes', () => {
     expect(notaAnulados({ anulados: [a('A', 'X', 2), a('B', 'Y', 1)] })).toBe(
       'Votos anulados (inclusive sub judice): A (X), 2 votos; B (Y), 1 voto — não entram nos percentuais nem nos votos válidos.',
     );
+  });
+  test('sigla2022 mostra a sigla original de 2022 e a atual quando mudou', () => {
+    const l = (partido: string, siglas_2022: string[]) => ({ partido, siglas_2022 });
+    expect(sigla2022(l('PL', ['PL']))).toBe('PL');
+    expect(sigla2022(l('PODE', ['PSC']))).toBe('PSC (hoje PODE)');
+    expect(sigla2022(l('PRD', ['PATRIOTA', 'PTB']))).toBe('PATRIOTA + PTB (hoje PRD)');
+    expect(sigla2022(l('NOVO', []))).toBe('NOVO');
+    expect(sigla2022(undefined, 'PSDB')).toBe('PSDB');
+  });
+  test('notasSiglas2022 explica linhas que somam siglas convertidas', () => {
+    const l = (partido: string, siglas_2022: string[]) => ({ partido, siglas_2022 });
+    expect(notasSiglas2022([l('PL', ['PL']), l('NOVO', [])])).toEqual([]);
+    expect(notasSiglas2022([l('PRD', ['PATRIOTA', 'PTB']), l('PODE', ['PODE', 'PSC'])])).toEqual([
+      'PRD em 2022 = PATRIOTA + PTB',
+      'PODE em 2022 = PODE + PSC',
+    ]);
   });
 });
