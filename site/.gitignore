@@ -25,9 +25,3 @@ pnpm-debug.log*
 # copiado de dados/ no prebuild (scripts/copiar-ranking.mjs)
 public/dados/
 public/busca-municipios.json
-
-# wrangler files
-.wrangler
-.dev.vars*
-!.dev.vars.example
-!.env.example
