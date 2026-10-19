@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import sys
 from collections.abc import Callable
@@ -19,6 +20,7 @@ from qma_comum.municipios import (
 )
 
 from .coleta_2026 import CARGOS, EXTERIOR, coletar_2026
+from .base_ao_vivo import gerar_base
 from .comparacao import carregar_equivalencias
 from .conferencia import ErroConferencia, conferir
 from .config import url_resultado_2026
@@ -119,14 +121,45 @@ def gerar(
     )
 
 
+def gerar_base_ao_vivo(
+    raiz: Path = Path("dados"),
+    *,
+    _baixar_json: Callable = baixar_json,
+    _arquivos_2022: Callable = arquivos_2022,
+    _ler_2022: Callable = ler_2022,
+    _coletar: Callable = coletar_2026,
+    _equivalencias: Callable = carregar_equivalencias,
+) -> Path:
+    """Grava `dados/eleicoes-2026/base-ao-vivo.json` (2º turno de 2022 × 1º turno de 2026)."""
+    municipios = atribuir_slugs(ler_config_municipios(_baixar_json(URL_CONFIG_MUNICIPIOS)))
+    validar_universo(municipios)
+    log.info("2022 (2º turno)")
+    votacao, detalhe = _arquivos_2022()
+    r2022 = _ler_2022(votacao, detalhe, turno=2)
+    log.info("2026 (1º turno, em cache)")
+    r2026 = _coletar(municipios)
+    base = gerar_base(r2022, r2026, municipios, _equivalencias())
+    destino = Path(raiz) / "eleicoes-2026" / "base-ao-vivo.json"
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    destino.write_text(
+        json.dumps(base, ensure_ascii=False, separators=(",", ":")), encoding="utf-8"
+    )
+    log.info("base gravada: %s (%d municípios)", destino, len(base["municipios"]))
+    return destino
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="qma_eleicoes")
     sub = parser.add_subparsers(dest="comando", required=True)
     g = sub.add_parser("gerar", help="gera os JSON de dados/eleicoes-2026")
     g.add_argument("--forcar", action="store_true", help="ignora o cache dos arquivos de 2026")
+    sub.add_parser("gerar-base", help="gera dados/eleicoes-2026/base-ao-vivo.json")
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     logging.getLogger("httpx").setLevel(logging.WARNING)
+    if args.comando == "gerar-base":
+        gerar_base_ao_vivo()
+        return 0
     try:
         gerar(forcar=args.forcar)
     except ErroConferencia as e:
