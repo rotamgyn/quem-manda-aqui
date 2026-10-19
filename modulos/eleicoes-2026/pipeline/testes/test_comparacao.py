@@ -74,6 +74,17 @@ def test_equivalencia_soma_partidos_fundidos():
     assert c.volatilidade == pytest.approx(0)
 
 
+def test_siglas_2022_originais_de_cada_linha():
+    c = comparar(
+        _res(2022, {"PTB": 10, "PATRIOTA": 10, "PT": 80}),
+        _res(2026, {"PRD": 20, "PT": 70, "NOVO": 10}),
+        {"PTB": "PRD", "PATRIOTA": "PRD"},
+    )
+    assert _linha(c, "PRD").siglas_2022 == ("PATRIOTA", "PTB")
+    assert _linha(c, "PT").siglas_2022 == ("PT",)
+    assert _linha(c, "NOVO").siglas_2022 == ()
+
+
 def test_comparacao_sem_2022():
     c = comparar(None, _res(2026, {"PT": 40, "PL": 60}), {})
     assert c.volatilidade is None and c.virou is None and c.vencedor_2022 is None

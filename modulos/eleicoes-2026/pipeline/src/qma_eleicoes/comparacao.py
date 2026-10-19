@@ -21,6 +21,8 @@ class LinhaPartido:
     pct_2022: float | None
     pct_2026: float | None
     delta_pp: float | None
+    # Siglas originais de 2022 somadas nesta linha (ex.: PRD ← PATRIOTA + PTB); () sem 2022.
+    siglas_2022: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -55,6 +57,14 @@ def _votos_por_partido(r: Resultado | None, equiv: dict[str, str]) -> dict[str, 
     return votos
 
 
+def _siglas_por_partido(r: Resultado | None, equiv: dict[str, str]) -> dict[str, tuple[str, ...]]:
+    siglas: dict[str, set[str]] = defaultdict(set)
+    if r is not None:
+        for c in r.candidatos:
+            siglas[equiv.get(c.partido, c.partido)].add(c.partido)
+    return {p: tuple(sorted(s)) for p, s in siglas.items()}
+
+
 def _percentuais(r: Resultado | None, votos: dict[str, int]) -> dict[str, float] | None:
     """None quando não há resultado ou não há votos válidos."""
     if r is None or r.validos == 0:
@@ -83,13 +93,14 @@ def comparar(
     v26 = _votos_por_partido(r2026, {})
     p22 = _percentuais(r2022, v22)
     p26 = _percentuais(r2026, v26)
+    s22 = _siglas_por_partido(r2022, equivalencias)
 
     linhas = []
     for partido in set(v22) | set(v26):
         a = p22.get(partido) if p22 else None
         b = p26.get(partido) if p26 else None
         delta = b - a if a is not None and b is not None else None
-        linhas.append(LinhaPartido(partido, a, b, delta))
+        linhas.append(LinhaPartido(partido, a, b, delta, s22.get(partido, ())))
     linhas.sort(
         key=lambda l: (l.pct_2026 is None, -(l.pct_2026 or 0), -(l.pct_2022 or 0), l.partido)
     )
