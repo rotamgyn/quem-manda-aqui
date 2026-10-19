@@ -6,7 +6,7 @@ import BarrasComparativas from '../../../components/BarrasComparativas.astro';
 import Mapa from '../../../components/Mapa.astro';
 import { UFS, lerComparacao, lerMetaObrigatoria, lerMunicipiosUF } from '../../../lib/dados';
 import { urlOg } from '../../../lib/cartao';
-import { sigla2022 } from '../../../lib/formato';
+import { nomeProprio, sigla2022 } from '../../../lib/formato';
 import { doEstado, noEstado } from '../../../lib/estados';
 import { coresDoMapa, corNoMapa } from '../../../lib/cores';
 import type { Resultado } from '../../../lib/tipos';
@@ -35,6 +35,7 @@ const paleta = coresDoMapa(municipios.flatMap((m) => [m.governador?.vencedor_202
 for (const m of municipios) {
   const g = m.governador;
   links[m.ibge] = `/eleicoes-2026/municipio/${uf!.toLowerCase()}/${m.slug}/`;
+  const nomeM = nomeProprio(m.nome);
   const v22 = g?.vencedor_2022 ?? null;
   const v26 = g?.vencedor_2026 ?? null;
   const pct = (r: Resultado | null, v: string | null) => r?.candidatos.find((x) => x.partido === v)?.pct ?? null;
@@ -42,8 +43,8 @@ for (const m of municipios) {
   m26.cores[m.ibge] = v26 ? corNoMapa(paleta, v26) : 'var(--outros)';
   // 2022: sigla original ("PSC (hoje PODE)") e % da linha do partido, que já soma siglas convertidas
   const l22 = v22 ? g?.partidos.find((l) => l.partido === v22) : undefined;
-  m22.rotulos[m.ibge] = rotuloVencedor(m.nome, 2022, v22 && sigla2022(l22, v22), l22?.pct_2022 ?? null);
-  m26.rotulos[m.ibge] = rotuloVencedor(m.nome, 2026, v26, pct(g?.r2026 ?? null, v26));
+  m22.rotulos[m.ibge] = rotuloVencedor(nomeM, 2022, v22 && sigla2022(l22, v22), l22?.pct_2022 ?? null);
+  m26.rotulos[m.ibge] = rotuloVencedor(nomeM, 2026, v26, pct(g?.r2026 ?? null, v26));
   if (g?.virou === true) virou.push(m.ibge);
   if (!v22) sem2022.push(m.ibge);
   if (v22) vencedores.push(v22);

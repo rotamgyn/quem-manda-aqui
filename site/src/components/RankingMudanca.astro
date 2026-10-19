@@ -1,7 +1,7 @@
 ---
 import { FAIXAS, filtrarRanking } from '../lib/ranking';
 import { UFS } from '../lib/dados';
-import { inteiro } from '../lib/formato';
+import { inteiro, nomeProprio } from '../lib/formato';
 import type { ItemRanking } from '../lib/tipos';
 
 interface Props { itens: ItemRanking[]; limite?: number }
@@ -37,7 +37,7 @@ const url = (i: ItemRanking) => `/eleicoes-2026/municipio/${i.uf.toLowerCase()}/
         {topo.map((i, n) => (
           <tr>
             <td>{n + 1}</td>
-            <th scope="row"><a href={url(i)}>{i.nome}</a> <span class="uf">{i.uf}</span></th>
+            <th scope="row"><a href={url(i)}>{nomeProprio(i.nome)}</a> <span class="uf">{i.uf}</span></th>
             <td class="num">{inteiro(i.aptos)}</td>
             <td class="num">{i.volatilidade.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
             <td>{i.vencedor_2022 ?? '—'} → {i.vencedor_2026 ?? '—'}{i.virou ? ' (mudou)' : ''}</td>
@@ -49,6 +49,7 @@ const url = (i: ItemRanking) => `/eleicoes-2026/municipio/${i.uf.toLowerCase()}/
 </section>
 <script>
   import { filtrarRanking, type Faixa } from '../lib/ranking';
+  import { nomeProprio } from '../lib/formato';
   import type { ItemRanking } from '../lib/tipos';
 
   const raiz = document.querySelector<HTMLElement>('section.ranking');
@@ -80,7 +81,7 @@ const url = (i: ItemRanking) => `/eleicoes-2026/municipio/${i.uf.toLowerCase()}/
           nome.scope = 'row';
           const a = document.createElement('a');
           a.href = `/eleicoes-2026/municipio/${i.uf.toLowerCase()}/${i.slug}/`;
-          a.textContent = i.nome;
+          a.textContent = nomeProprio(i.nome);
           const uf = document.createElement('span');
           uf.className = 'uf';
           uf.textContent = i.uf;
