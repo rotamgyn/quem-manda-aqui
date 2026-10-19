@@ -63,6 +63,17 @@ export function formatarDataHora(iso: string): string {
   return `${p.day}/${p.month}/${p.year} às ${p.hour}:${p.minute}`;
 }
 
+/**
+ * Data/hora de geração do arquivo do TSE (`dg hg`, horário de Brasília), ex.: "05/10/2026 12:51:47"
+ * → { iso: "2026-10-05T12:51:47-03:00", texto: "05/10/2026 às 12:51" }. Formato inesperado: iso vazio.
+ */
+export function dataHoraTSE(dgHg: string): { iso: string; texto: string } {
+  const m = /^(\d{2})\/(\d{2})\/(\d{4}) (\d{2}):(\d{2}):(\d{2})$/.exec(dgHg.trim());
+  if (!m) return { iso: '', texto: dgHg };
+  const [, d, mes, a, h, min, s] = m;
+  return { iso: `${a}-${mes}-${d}T${h}:${min}:${s}-03:00`, texto: `${d}/${mes}/${a} às ${h}:${min}` };
+}
+
 /** As 27 unidades da federação (sem BR e sem o exterior, ZZ). */
 export const UFS: string[] = [
   'AC', 'AL', 'AM', 'AP', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MG', 'MS', 'MT', 'PA',

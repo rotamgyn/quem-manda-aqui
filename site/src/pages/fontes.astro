@@ -6,7 +6,7 @@ import { pctSecoes } from '../lib/formato';
 
 const meta = lerMeta();
 const fontes = [
-  { nome: 'TSE: resultados ao vivo 2026', uso: 'Resultado do 1º turno de 2026 por município; 2º turno ao vivo.', url: 'https://resultados.tse.jus.br/oficial/ele2026/' },
+  { nome: 'TSE: página de resultados 2026', uso: 'Resultado do 1º turno de 2026 por município, estado e Brasil: arquivos JSON da página oficial de resultados do TSE (não é o portal de dados abertos).', url: 'https://resultados.tse.jus.br/oficial/ele2026/' },
   { nome: 'TSE: índice de eleições', uso: 'Códigos de cada eleição (1º turno: federal 6257, estadual 6259).', url: 'https://resultados.tse.jus.br/oficial/comum/config/ele-c.json' },
   { nome: 'TSE: Dados Abertos 2022', uso: 'Votos por município e zona em 2022, comparecimento, abstenção, brancos e nulos.', url: 'https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_candidato_munzona/votacao_candidato_munzona_2022.zip' },
   { nome: 'TSE: detalhe da votação 2022', uso: 'Comparecimento, abstenção, brancos e nulos em 2022.', url: 'https://cdn.tse.jus.br/estatistica/sead/odsele/detalhe_votacao_munzona/detalhe_votacao_munzona_2022.zip' },
@@ -22,8 +22,8 @@ const fontes = [
     <h2>Última coleta</h2>
     {meta ? (
       <ul>
-        <li>Dados gerados em <time datetime={meta.gerado_em}>{formatarDataHora(meta.gerado_em)}</time> (horário de Brasília).</li>
-        <li>Versão do arquivo de resultados de 2026 do TSE: <code>{meta.fonte_2026_dg_hg}</code> (data e hora de geração do arquivo, fornecidas pelo TSE).</li>
+        <li>Coletado em: <code>{meta.fonte_2026_dg_hg}</code>, data e hora de geração do arquivo de resultados de 2026 informadas pelo próprio TSE (horário de Brasília).</li>
+        <li>Gerado em <time datetime={meta.gerado_em}>{formatarDataHora(meta.gerado_em)}</time> (horário de Brasília): quando nosso programa montou os dados a partir desses arquivos.</li>
         <li>Seções totalizadas no Brasil: {pctSecoes(meta.pct_secoes_br, meta.pct_secoes_br >= 100)}.</li>
       </ul>
     ) : (
@@ -42,6 +42,6 @@ const fontes = [
         </tbody>
       </table>
     </div>
-    {meta && <Fonte fonte="TSE (resultados.tse.jus.br e cdn.tse.jus.br) e IBGE" atualizadoEm={meta.gerado_em} />}
+    {meta && <Fonte fonte="TSE: resultados.tse.jus.br (2026) e cdn.tse.jus.br (dados abertos de 2022)" meta={meta} />}
   </div>
 </Layout>

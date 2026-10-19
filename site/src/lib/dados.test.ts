@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import {
-  UFS, dividirLinhaCsv, formatarDataHora, lerComparacao, lerEquivalenciasDeTexto, verificarMaioria, lerMeta, lerMunicipiosUF, lerRanking,
+  UFS, dataHoraTSE, dividirLinhaCsv, formatarDataHora, lerComparacao, lerEquivalenciasDeTexto, verificarMaioria, lerMeta, lerMunicipiosUF, lerRanking,
 } from './dados';
 
 describe('dados', () => {
@@ -14,6 +14,10 @@ describe('dados', () => {
   test('data em horário de Brasília', () => {
     expect(formatarDataHora('2026-10-05T05:14:00+00:00')).toBe('05/10/2026 às 02:14');
     expect(formatarDataHora('lixo')).toBe('lixo');
+  });
+  test('data/hora do arquivo do TSE (dg hg, horário de Brasília)', () => {
+    expect(dataHoraTSE('05/10/2026 12:51:47')).toEqual({ iso: '2026-10-05T12:51:47-03:00', texto: '05/10/2026 às 12:51' });
+    expect(dataHoraTSE('lixo')).toEqual({ iso: '', texto: 'lixo' });
   });
 });
 

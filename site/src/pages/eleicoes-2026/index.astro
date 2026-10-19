@@ -61,7 +61,7 @@ const estados = UFS.map((uf) => ({ uf, nome: nomeEstado(uf) }));
       {estados.map((e) => <li><a href={`/eleicoes-2026/governador/${e.uf.toLowerCase()}/`}>{e.nome}</a></li>)}
     </ul>
 
-    <Fonte fonte={`TSE, dados abertos de 2022 e 2026 (arquivo de 2026 gerado em ${meta.fonte_2026_dg_hg})`} atualizadoEm={meta.gerado_em} />
+    <Fonte fonte="TSE: resultados de 2026 em resultados.tse.jus.br e dados abertos de 2022" meta={meta} />
   </div>
 </Layout>
 <style>

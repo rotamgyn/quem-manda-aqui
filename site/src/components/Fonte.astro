@@ -1,9 +1,15 @@
 ---
-import { formatarDataHora } from '../lib/dados';
-interface Props { fonte: string; atualizadoEm: string }
-const { fonte, atualizadoEm } = Astro.props;
+import { dataHoraTSE, formatarDataHora } from '../lib/dados';
+import type { Meta } from '../lib/tipos';
+interface Props { fonte: string; meta: Meta }
+const { fonte, meta } = Astro.props;
+// "Coletado em" é a data/hora do arquivo do TSE (dg/hg), não a hora em que o pipeline rodou.
+const coleta = dataHoraTSE(meta.fonte_2026_dg_hg);
 ---
-<p class="fonte-dado">Fonte: {fonte}. Coletado em <time datetime={atualizadoEm}>{formatarDataHora(atualizadoEm)}</time>.</p>
+<p class="fonte-dado">
+  Fonte: {fonte}. Coletado em {coleta.iso ? <time datetime={coleta.iso}>{coleta.texto}</time> : coleta.texto} (data e hora do arquivo de resultados do TSE, horário de Brasília).
+  Gerado em <time datetime={meta.gerado_em}>{formatarDataHora(meta.gerado_em)}</time>.
+</p>
 <style>
   .fonte-dado { margin: 1.25rem 0 0; padding-top: 0.9rem; border-top: 1px solid var(--linha); font-size: var(--t-xs); color: var(--tinta-2); }
 </style>
