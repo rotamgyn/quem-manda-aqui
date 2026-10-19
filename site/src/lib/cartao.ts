@@ -1,10 +1,12 @@
 // Cartão de compartilhamento 1200x630 (WhatsApp/redes). Somente servidor/build.
 // Sempre em fundo claro, por isso usa os hex do tema claro (satori não lê variáveis CSS).
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import satori from 'satori';
 import { Resvg } from '@resvg/resvg-js';
 import { pct } from './formato';
+import type { LinhaPartido } from './tipos';
 
 export type BarraCartao = { partido: string; cor: string; pct2026: number | null; pct2022: number | null };
 
@@ -16,6 +18,22 @@ const TINTA_2 = '#4a5059';
 const TINTA_3 = '#636973';
 const LINHA = '#d5d9df';
 
+/** Os 3 partidos mais votados em 2026, com a cor dada por `corDe` (empates mantêm a ordem de entrada). */
+export function escolherBarras(partidos: LinhaPartido[], corDe: (partido: string) => string): BarraCartao[] {
+  return partidos
+    .filter((l) => l.pct_2026 !== null)
+    .sort((a, b) => (b.pct_2026 as number) - (a.pct_2026 as number))
+    .slice(0, 3)
+    .map((l) => ({ partido: l.partido, cor: corDe(l.partido), pct2026: l.pct_2026, pct2022: l.pct_2022 }));
+}
+
+/** Texto sob as barras de 2022: município sem resultado em 2022 x partido que não disputou. */
+export const rotulo2022 = (pct2022: number | null, sem2022: boolean): string =>
+  sem2022 ? 'Sem dados de 2022' : pct2022 === null ? 'Não disputou em 2022' : `2022: ${pct(pct2022)}`;
+
+export const legenda = (sem2022: boolean): string =>
+  sem2022 ? 'Barra cheia: 2026. Fonte: TSE' : 'Barra cheia: 2026. Listrada: 2022. Fonte: TSE';
+
 /** Caminho público do cartão de uma rota (ex.: 'municipio/go/anapolis'). */
 export const urlOg = (rota: string): string => `/og/${rota}.png`;
 
@@ -23,7 +41,10 @@ type Fonte = { name: string; data: Buffer; weight: 400 | 700 | 900; style: 'norm
 let fontes: Fonte[] | null = null;
 function carregarFontes(): Fonte[] {
   if (fontes) return fontes;
-  const ler = (n: string) => readFileSync(resolve(process.cwd(), 'src/assets/fontes', n));
+  // Ao lado do código-fonte (testes, dev); no build o módulo vai para um chunk em dist/, então cai no cwd (site/).
+  const ao_lado = fileURLToPath(new URL('../assets/fontes/', import.meta.url));
+  const pasta = existsSync(ao_lado) ? ao_lado : resolve(process.cwd(), 'src/assets/fontes');
+  const ler = (n: string) => readFileSync(resolve(pasta, n));
   fontes = [
     { name: 'Archivo', data: ler('ArchivoExpanded-Black.ttf'), weight: 900, style: 'normal' },
     { name: 'Atkinson', data: ler('AtkinsonHyperlegible-Regular.ttf'), weight: 400, style: 'normal' },
@@ -54,7 +75,7 @@ const simboloQ = (cor: string, altura: number): No => {
 
 const texto = (style: Record<string, unknown>, children: string) => el('div', { display: 'flex', ...style }, children);
 
-function barra(b: BarraCartao, maximo: number): No {
+function barra(b: BarraCartao, maximo: number, sem2022: boolean): No {
   const largura = (v: number) => Math.max(Math.round((v / maximo) * TRILHA), 6);
   const faixa = (v: number | null, listrada: boolean) =>
     caixa(
@@ -79,16 +100,16 @@ function barra(b: BarraCartao, maximo: number): No {
       texto({ fontFamily: 'Atkinson', fontWeight: 700, fontSize: 32, color: TINTA }, b.pct2026 === null ? '—' : pct(b.pct2026)),
     ]),
     faixa(b.pct2026, false),
-    faixa(b.pct2022, true),
+    ...(sem2022 ? [] : [faixa(b.pct2022, true)]),
     texto(
       { fontFamily: 'Atkinson', fontWeight: 400, fontSize: 20, color: TINTA_3, marginTop: 4 },
-      b.pct2022 === null ? 'Sem dados de 2022' : `2022: ${pct(b.pct2022)}`,
+      rotulo2022(b.pct2022, sem2022),
     ),
   ]);
 }
 
 /** Árvore do cartão; título e subtítulo encolhem conforme o comprimento. */
-function arvore(titulo: string, frase: string, barras: BarraCartao[]): No {
+export function arvore(titulo: string, frase: string, barras: BarraCartao[], sem2022 = false): No {
   const tam = titulo.length > 44 ? 34 : titulo.length > 34 ? 40 : titulo.length > 24 ? 46 : 54;
   const tamFrase = frase.length > 90 ? 26 : 30;
   const palavras = titulo.split(' ').filter(Boolean);
@@ -113,9 +134,9 @@ function arvore(titulo: string, frase: string, barras: BarraCartao[]): No {
     ]),
   ]);
   const direita = caixa({ flexDirection: 'column', width: TRILHA, justifyContent: 'space-between' }, [
-    caixa({ flexDirection: 'column' }, barras.map((b) => barra(b, maximo))),
+    caixa({ flexDirection: 'column' }, barras.map((b) => barra(b, maximo, sem2022))),
     caixa({ flexDirection: 'column' }, [
-      texto({ fontFamily: 'Atkinson', fontWeight: 400, fontSize: 20, color: TINTA_3 }, 'Barra cheia: 2026. Listrada: 2022. Fonte: TSE'),
+      texto({ fontFamily: 'Atkinson', fontWeight: 400, fontSize: 20, color: TINTA_3 }, legenda(sem2022)),
       texto({ fontFamily: 'Atkinson', fontWeight: 700, fontSize: 26, color: TINTA, marginTop: 8 }, 'quemmandaaqui.com.br'),
     ]),
   ]);
@@ -126,8 +147,8 @@ function arvore(titulo: string, frase: string, barras: BarraCartao[]): No {
 }
 
 /** PNG 1200x630. `barras`: até 3 partidos (quem chama escolhe e define a cor). */
-export async function cartaoPNG(titulo: string, frase: string, barras: BarraCartao[] = []): Promise<Uint8Array> {
-  const svg = await satori(arvore(titulo, frase, barras.slice(0, 3)) as never, {
+export async function cartaoPNG(titulo: string, frase: string, barras: BarraCartao[] = [], sem2022 = false): Promise<Uint8Array> {
+  const svg = await satori(arvore(titulo, frase, barras.slice(0, 3), sem2022) as never, {
     width: LARGURA,
     height: ALTURA,
     fonts: carregarFontes(),
