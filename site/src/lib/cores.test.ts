@@ -6,6 +6,8 @@ import {
   OUTROS_ESCURO,
   criarCores,
   corDoPartido,
+  coresDoMapa,
+  corNoMapa,
 } from './cores';
 
 const ORDEM = ['AA', 'BB', 'CC', 'DD', 'EE', 'FF', 'GG', 'HH', 'II', 'JJ'];
@@ -91,5 +93,25 @@ describe('ordem nacional lida dos arquivos', () => {
     arq('go-governador.json', [['C', 10], ['A', 70]]);
     expect(lerOrdemNacional(base)).toEqual(['A', 'B', 'A', 'C']);
     expect(criarCores(lerOrdemNacional(base)).corDoPartido('C')).toBe('var(--s3)');
+  });
+});
+
+describe('coresDoMapa', () => {
+  test('3 partidos mais vitoriosos recebem 3 cores distintas; o resto fica em outros', () => {
+    const v = [...Array(5).fill('AA'), ...Array(4).fill('BB'), ...Array(3).fill('CC'), 'DD', 'DD', 'EE', null];
+    const c = coresDoMapa(v);
+    expect(c.AA).toBe('var(--s1)');
+    expect(c.BB).toBe('var(--s2)');
+    expect(c.CC).toBe('var(--s3)');
+    expect(c.DD).toBe('var(--outros)');
+    expect(corNoMapa(c, 'EE')).toBe('var(--outros)');
+    expect(corNoMapa(c, null)).toBe('var(--outros)');
+    expect(corNoMapa(c, 'ZZ')).toBe('var(--outros)');
+  });
+  test('empate é resolvido em ordem alfabética, independente da ordem de entrada', () => {
+    const a = coresDoMapa(['ZZ', 'BB', 'AA', 'CC', 'DD']);
+    const b = coresDoMapa(['DD', 'CC', 'AA', 'BB', 'ZZ']);
+    expect(a).toEqual(b);
+    expect([a.AA, a.BB, a.CC, a.DD]).toEqual(['var(--s1)', 'var(--s2)', 'var(--s3)', 'var(--outros)']);
   });
 });

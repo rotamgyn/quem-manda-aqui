@@ -36,13 +36,21 @@ const todos = caminhosSVG(lerMalha(uf), L, A).map((c) => ({ ...c, chave: chave(c
 // destacados por último, para o contorno não ficar sob os vizinhos
 const caminhos = [...todos.filter((c) => !realce.has(c.chave)), ...todos.filter((c) => realce.has(c.chave))];
 const hachura = `hachura-${id}`;
+// legenda: só o que aparece de fato no mapa
+const corUsada = new Set(todos.filter((c) => !vazios.has(c.chave)).map((c) => cores[c.chave] ?? 'var(--outros)'));
+const legendaVisivel = legenda.filter((i) => corUsada.has(i.cor));
+const temVazio = todos.some((c) => vazios.has(c.chave));
+const temDestaque = todos.some((c) => realce.has(c.chave));
 // a tabela lista também quem não tem polígono na malha (ex.: município instalado depois da malha)
+const desenhados = new Set(todos.map((c) => c.chave));
 const linhas = Object.keys(rotulos)
   .map((chave) => {
-    const c = { chave };
-    const texto = rotulos[c.chave] ?? c.chave;
+    const texto = rotulos[chave];
     const i = texto.indexOf(' — ');
-    return { chave: c.chave, nome: i < 0 ? texto : texto.slice(0, i), resultado: i < 0 ? '' : texto.slice(i + 3), href: links[c.chave] };
+    return {
+      chave, nome: i < 0 ? texto : texto.slice(0, i), resultado: i < 0 ? '' : texto.slice(i + 3), href: links[chave],
+      mudou: realce.has(chave), foraDoMapa: !desenhados.has(chave),
+    };
   })
   .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
 ---
@@ -61,26 +69,27 @@ const linhas = Object.keys(rotulos)
       const attrs = brasil ? { 'data-uf': c.chave } : { 'data-ibge': c.codigo };
       const classe = realce.has(c.chave) ? 'regiao virou' : 'regiao';
       const rotulo = rotulos[c.chave] ?? c.chave;
-      const path = <path d={c.d} fill={fill} class={classe} {...attrs}><title>{rotulo}</title></path>;
+      const path = <path d={c.d} fill={fill} class={classe} {...attrs}><title>{realce.has(c.chave) ? `${rotulo} — mudou desde 2022` : rotulo}</title></path>;
       return links[c.chave] ? <a href={links[c.chave]}>{path}</a> : path;
     })}
   </svg>
   <ul class="legenda" aria-label="Legenda do mapa">
-    {legenda.map((i) => <li><span class="amostra" style={`background:${i.cor}`}></span>{i.rotulo}</li>)}
-    {semDados.length > 0 && rotuloSemDados && <li><span class="amostra hachurado"></span>{rotuloSemDados}</li>}
-    {destacar.length > 0 && rotuloDestaque && <li><span class="amostra contorno"></span>{rotuloDestaque}</li>}
+    {legendaVisivel.map((i) => <li><span class="amostra" style={`background:${i.cor}`}></span>{i.rotulo}</li>)}
+    {temVazio && rotuloSemDados && <li><span class="amostra hachurado"></span>{rotuloSemDados}</li>}
+    {temDestaque && rotuloDestaque && <li><span class="amostra contorno"></span>{rotuloDestaque}</li>}
   </ul>
   <details>
     <summary>Ver como tabela</summary>
     <div class="tabela-rolagem">
       <table class="tabela">
         <caption class="sr">{legendaMapa}</caption>
-        <thead><tr><th scope="col">{brasil ? 'Estado' : 'Município'}</th><th scope="col">Resultado</th></tr></thead>
+        <thead><tr><th scope="col">{brasil ? 'Estado' : 'Município'}</th><th scope="col">Resultado</th>{destacar.length > 0 && <th scope="col">Mudou desde 2022</th>}</tr></thead>
         <tbody>
           {linhas.map((l) => (
             <tr>
               <th scope="row">{l.href ? <a href={l.href}>{l.nome}</a> : l.nome}</th>
-              <td>{l.resultado || '—'}</td>
+              <td>{l.resultado || '—'}{l.foraDoMapa && ' (não aparece no mapa)'}</td>
+              {destacar.length > 0 && <td>{l.mudou ? 'Sim' : 'Não'}</td>}
             </tr>
           ))}
         </tbody>

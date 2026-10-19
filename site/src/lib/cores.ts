@@ -56,3 +56,20 @@ export function definirOrdem(ordem: string[]): void {
 export const corDoPartido = (partido: string): string => padrao.corDoPartido(partido);
 export const corDoPartidoMapa = (partido: string): string => padrao.corDoPartidoMapa(partido);
 export const corHex = (partido: string, tema: Tema = 'claro'): string => padrao.corHex(partido, tema);
+
+/**
+ * Cores de UM mapa: os 3 partidos que mais venceram nas regiões mostradas (desempate alfabético)
+ * ganham var(--s1..s3); os demais ficam em var(--outros). `null` (sem vencedor) é ignorado.
+ */
+export function coresDoMapa(vencedores: (string | null)[]): Record<string, string> {
+  const contagem = new Map<string, number>();
+  for (const v of vencedores) if (v) contagem.set(norm(v), (contagem.get(norm(v)) ?? 0) + 1);
+  const ordem = [...contagem.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'pt-BR'));
+  const cores: Record<string, string> = {};
+  ordem.forEach(([p], i) => { cores[p] = i < CORES_NO_MAPA ? `var(--s${i + 1})` : OUTROS; });
+  return cores;
+}
+
+/** Cor de um partido num mapa montado com `coresDoMapa`. */
+export const corNoMapa = (cores: Record<string, string>, partido: string | null): string =>
+  (partido && cores[norm(partido)]) || OUTROS;

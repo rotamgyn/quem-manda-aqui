@@ -8,7 +8,7 @@ import RankingMudanca from '../../components/RankingMudanca.astro';
 import { UFS, lerComparacao, lerMetaObrigatoria, lerRanking } from '../../lib/dados';
 import { carregarOrdemNacional } from '../../lib/ordemPartidos';
 import { inteiro, nomeUF, pct } from '../../lib/formato';
-import { corDoPartidoMapa } from '../../lib/cores';
+import { coresDoMapa, corNoMapa } from '../../lib/cores';
 import { montarLegenda, rotuloVencedor } from '../../lib/mapa';
 
 carregarOrdemNacional();
@@ -16,20 +16,21 @@ const meta = lerMetaObrigatoria();
 const br = lerComparacao('br', 'presidente');
 const exterior = lerComparacao('zz', 'presidente');
 const ranking = lerRanking();
+const dadosUF = UFS.map((uf) => ({ uf, c: lerComparacao(uf, 'presidente') }));
+const paleta = coresDoMapa(dadosUF.map(({ c }) => c.vencedor_2026));
 const cores: Record<string, string> = {};
 const rotulos: Record<string, string> = {};
 const links: Record<string, string> = {};
 const vencedores: string[] = [];
-for (const uf of UFS) {
-  const c = lerComparacao(uf, 'presidente');
+for (const { uf, c } of dadosUF) {
   const v = c.vencedor_2026;
   const lider = c.r2026?.candidatos.find((x) => x.partido === v);
-  cores[uf] = v ? corDoPartidoMapa(v) : 'var(--outros)';
+  cores[uf] = v ? corNoMapa(paleta, v) : 'var(--outros)';
   rotulos[uf] = rotuloVencedor(nomeUF(c.nome ?? uf), 2026, v, lider?.pct ?? null);
   links[uf] = `/eleicoes-2026/governador/${uf.toLowerCase()}/`;
   if (v) vencedores.push(v);
 }
-const legenda = montarLegenda(vencedores, corDoPartidoMapa);
+const legenda = montarLegenda(vencedores, (p) => corNoMapa(paleta, p));
 const lider26 = exterior.r2026?.candidatos[0];
 ---
 <Layout
@@ -44,7 +45,7 @@ const lider26 = exterior.r2026?.candidatos[0];
 
     <h2>Quem venceu em cada estado</h2>
     <Mapa uf="br" id="br" cores={cores} rotulos={rotulos} links={links} legenda={legenda} legendaMapa="Partido do candidato mais votado para presidente em cada estado, 1º turno de 2026" />
-    <p>
+    <div>
       <label for="seletor-uf">Ver o mapa dos municípios de:</label>
       <select id="seletor-uf" class="seletor" hidden>
         <option value="">Escolha um estado</option>
@@ -53,7 +54,7 @@ const lider26 = exterior.r2026?.candidatos[0];
       <noscript>
         <ul class="lista-ufs">{UFS.map((uf) => <li><a href={links[uf]}>{rotulos[uf].split(' — ')[0]}</a></li>)}</ul>
       </noscript>
-    </p>
+    </div>
 
     <h2>O que mudou desde 2022</h2>
     <BarrasComparativas linhas={br.partidos} titulo="Presidente, 1º turno: 2026 contra 2022" legenda="Porcentagem dos votos válidos por partido para presidente, 2022 e 2026, no Brasil" />
