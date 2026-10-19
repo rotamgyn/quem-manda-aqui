@@ -25,7 +25,7 @@ const { resultado, apuracaoCompleta, legenda } = Astro.props;
               <td>{c.partido}</td>
               <td class="num">{inteiro(c.votos)}</td>
               <td class="num">{pct(c.pct)}</td>
-              <td>{rotuloSituacao(c, resultado.validos)}</td>
+              <td>{rotuloSituacao(c)}</td>
             </tr>
           ))}
         </tbody>

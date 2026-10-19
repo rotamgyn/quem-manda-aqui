@@ -24,12 +24,11 @@ export function inteiro(n: number): string {
 }
 
 /**
- * Percentual de seções totalizadas para exibição: TRUNCA em 2 casas, para que
- * 99,996 nunca apareça como "100%". Só 100 exato vira "100%".
+ * Percentual de seções totalizadas para o AVISO de apuração incompleta: trunca em 2 casas
+ * e nunca passa de 99,99%, porque só se mostra quando a apuração NÃO está completa.
  */
 export function pctApuracao(n: number): string {
-  if (n >= 100) return '100%';
-  const t = Math.floor(n * 100) / 100;
+  const t = Math.min(Math.floor(n * 100) / 100, 99.99);
   return `${t.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%`;
 }
 
@@ -44,14 +43,10 @@ export function nomeUF(nome: string): string {
     .join(' ');
 }
 
-/**
- * Rótulo da situação no 1º turno. "2º turno" nunca vira "eleito". Por segurança, um
- * candidato marcado "eleito" sem maioria absoluta dos votos válidos (a regra do 1º turno)
- * também aparece como "vai ao 2º turno".
- */
-export function rotuloSituacao(c: Pick<VotoCandidato, 'situacao' | 'votos'>, validos: number): string {
+/** Rótulo da situação no 1º turno, direto do campo `situacao` dos dados. */
+export function rotuloSituacao(c: Pick<VotoCandidato, 'situacao'>): string {
   if (c.situacao === '2º turno') return 'vai ao 2º turno';
-  if (c.situacao === 'eleito') return validos > 0 && c.votos * 2 <= validos ? 'vai ao 2º turno' : 'eleito';
+  if (c.situacao === 'eleito') return 'eleito';
   if (c.situacao === 'não eleito') return 'não eleito';
   return '—';
 }

@@ -35,7 +35,7 @@ const estados = UFS.map((uf) => ({ uf, nome: nomeUF(lerComparacao(uf, 'governado
           <b>{c.nome_urna}</b>
           <span>{c.partido}</span>
           <strong>{pct(c.pct)}</strong>
-          <em>{rotuloSituacao(c, br.r2026!.validos)}</em>
+          <em>{rotuloSituacao(c)}</em>
         </li>
       ))}
     </ul>

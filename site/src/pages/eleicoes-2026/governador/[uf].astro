@@ -2,8 +2,7 @@
 import Layout from '../../../components/Layout.astro';
 import Fonte from '../../../components/Fonte.astro';
 import ResultadoPrimeiroTurno from '../../../components/ResultadoPrimeiroTurno.astro';
-import TabelaComparativa from '../../../components/TabelaComparativa.astro';
-import BarrasVariacao from '../../../components/BarrasVariacao.astro';
+import BarrasComparativas from '../../../components/BarrasComparativas.astro';
 import { UFS, lerComparacao, lerMetaObrigatoria } from '../../../lib/dados';
 import { carregarOrdemNacional } from '../../../lib/ordemPartidos';
 import { nomeUF } from '../../../lib/formato';
@@ -30,8 +29,7 @@ const nome = nomeUF(c.nome ?? uf!.toUpperCase());
     <ResultadoPrimeiroTurno resultado={c.r2026} apuracaoCompleta={c.apuracao_completa} legenda={`Resultado do 1º turno para governador em ${nome}, 2026`} />
 
     <h2>O que mudou desde 2022</h2>
-    <BarrasVariacao linhas={c.partidos} />
-    <TabelaComparativa linhas={c.partidos} legenda={`Porcentagem dos votos válidos por partido para governador em ${nome}, 2022 e 2026`} />
+    <BarrasComparativas linhas={c.partidos} titulo={`Governador de ${nome}, 1º turno: 2026 contra 2022`} legenda={`Porcentagem dos votos válidos por partido para governador em ${nome}, 2022 e 2026`} />
     {c.volatilidade !== null && <p>Volatilidade de Pedersen no estado: <b>{c.volatilidade.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</b> (de 0 a 100).</p>}
 
     <Fonte fonte={`TSE, dados abertos de 2022 e 2026 (arquivo de 2026 gerado em ${meta.fonte_2026_dg_hg})`} atualizadoEm={meta.gerado_em} />

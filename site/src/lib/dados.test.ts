@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import {
-  UFS, dividirLinhaCsv, formatarDataHora, lerComparacao, lerEquivalenciasDeTexto, lerMeta, lerMunicipiosUF, lerRanking,
+  UFS, dividirLinhaCsv, formatarDataHora, lerComparacao, lerEquivalenciasDeTexto, verificarMaioria, lerMeta, lerMunicipiosUF, lerRanking,
 } from './dados';
 
 describe('dados', () => {
@@ -34,5 +34,19 @@ describe('leitura dos dados gerados', () => {
     const r = lerRanking();
     expect(r[0].volatilidade).toBeGreaterThanOrEqual(r[1].volatilidade);
     expect(lerMeta()?.gerado_em).toBeTruthy();
+  });
+});
+
+describe('guarda de maioria no 1º turno', () => {
+  const comp = (situacao: string, votos: number) => ({
+    cargo: 'governador', uf: 'XX',
+    r2026: { validos: 100, candidatos: [{ nome_urna: 'A', votos, situacao }] },
+  }) as never;
+  test('eleito sem maioria absoluta interrompe', () => {
+    expect(() => verificarMaioria(comp('eleito', 50))).toThrow(/maioria absoluta/);
+  });
+  test('eleito com maioria e 2º turno passam', () => {
+    expect(() => verificarMaioria(comp('eleito', 51))).not.toThrow();
+    expect(() => verificarMaioria(comp('2º turno', 40))).not.toThrow();
   });
 });

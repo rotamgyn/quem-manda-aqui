@@ -17,8 +17,8 @@ const { linhas, legenda } = Astro.props;
       {linhas.map((l) => (
         <tr>
           <th scope="row"><i class="cor" style={`background:${corDoPartido(l.partido)}`} aria-hidden="true"></i>{l.partido}</th>
-          <td class="num">{l.pct_2022 === null ? <><span>—</span> <span class="selo">não concorreu</span></> : pct(l.pct_2022)}</td>
-          <td class="num">{l.pct_2026 === null ? <><span>—</span> <span class="selo">não concorreu</span></> : pct(l.pct_2026)}</td>
+          <td class="num">{l.pct_2022 === null ? <><span>—</span> <span class="selo">não disputou em 2022</span></> : pct(l.pct_2022)}</td>
+          <td class="num">{l.pct_2026 === null ? <><span>—</span> <span class="selo">não disputou em 2026</span></> : pct(l.pct_2026)}</td>
           <td class="num">{pp(l.delta_pp)}</td>
         </tr>
       ))}

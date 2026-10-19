@@ -1,6 +1,7 @@
 // Leitura, em tempo de build, de dados que ficam fora de site/ (dados/ e dados-comuns/).
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import type { Cargo, Comparacao, ItemRanking, Meta, MunicipioComparado } from './tipos';
 
 const raiz = () => resolve(process.cwd(), '..');
 
@@ -8,7 +9,7 @@ const raiz = () => resolve(process.cwd(), '..');
 export const pastaDados = () => process.env.QMA_DADOS ?? resolve(raiz(), 'dados/eleicoes-2026');
 
 export type Equivalencia = { origem: string; destino: string; nota: string };
-export type Meta = { gerado_em: string; fonte_2026_dg_hg: string; pct_secoes_br: number };
+export type { Meta };
 
 /** Divide uma linha CSV respeitando campos entre aspas (aspas duplas escapadas com ""). */
 export function dividirLinhaCsv(linha: string): string[] {
@@ -70,8 +71,27 @@ export const UFS: string[] = [
 const lerJson = <T>(...partes: string[]): T => JSON.parse(readFileSync(resolve(pastaDados(), ...partes), 'utf-8')) as T;
 
 /** Comparação 2022 × 2026 de uma abrangência ('br', sigla de UF ou 'zz' para o exterior). */
+/**
+ * Guarda de integridade: no 1º turno só é "eleito" quem tem mais da metade dos votos válidos.
+ * Qualquer outro caso é erro nos dados e interrompe o build, em vez de ser mascarado.
+ */
+export function verificarMaioria(c: Comparacao): void {
+  const r = c.r2026;
+  if (!r) return;
+  for (const cand of r.candidatos) {
+    if (cand.situacao === 'eleito' && !(r.validos > 0 && cand.votos * 2 > r.validos)) {
+      throw new Error(
+        `Dados inconsistentes: ${cand.nome_urna} (${c.cargo}, ${c.uf}) consta como "eleito" no 1º turno sem maioria absoluta dos votos válidos (${cand.votos} de ${r.validos}).`,
+      );
+    }
+  }
+}
+
+/** Comparação 2022 × 2026 de uma abrangência ('br', sigla de UF ou 'zz' para o exterior). */
 export function lerComparacao(abr: string, cargo: Cargo): Comparacao {
-  return lerJson<Comparacao>('comparacoes', `${abr.toLowerCase()}-${cargo}.json`);
+  const c = lerJson<Comparacao>('comparacoes', `${abr.toLowerCase()}-${cargo}.json`);
+  verificarMaioria(c);
+  return c;
 }
 
 export function lerMunicipiosUF(uf: string): MunicipioComparado[] {

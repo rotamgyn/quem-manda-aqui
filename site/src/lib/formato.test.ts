@@ -17,22 +17,20 @@ describe('formato', () => {
     expect(inteiro(56082216)).toBe('56.082.216');
     expect(inteiro(0)).toBe('0');
   });
-  test('pctApuracao trunca em vez de arredondar para 100', () => {
+  test('pctApuracao trunca e nunca mostra 100%', () => {
     expect(pctApuracao(99.996)).toBe('99,99%');
-    expect(pctApuracao(100)).toBe('100%');
+    expect(pctApuracao(100)).toBe('99,99%');
     expect(pctApuracao(87.5)).toBe('87,5%');
   });
   test('nomeUF converte caixa alta em nome próprio', () => {
     expect(nomeUF('MATO GROSSO DO SUL')).toBe('Mato Grosso do Sul');
     expect(nomeUF('GOIÁS')).toBe('Goiás');
   });
-  test('rotuloSituacao: 2º turno nunca aparece como eleito', () => {
-    const c = (situacao: string, votos: number) => ({ situacao, votos }) as never;
-    expect(rotuloSituacao(c('2º turno', 40), 100)).toBe('vai ao 2º turno');
-    expect(rotuloSituacao(c('eleito', 51), 100)).toBe('eleito');
-    // dado marcado "eleito" sem maioria absoluta dos válidos: ainda vai ao 2º turno
-    expect(rotuloSituacao(c('eleito', 50), 100)).toBe('vai ao 2º turno');
-    expect(rotuloSituacao(c('não eleito', 10), 100)).toBe('não eleito');
-    expect(rotuloSituacao(c('', 10), 100)).toBe('—');
+  test('rotuloSituacao mapeia a situação direto', () => {
+    const c = (situacao: string) => ({ situacao }) as never;
+    expect(rotuloSituacao(c('2º turno'))).toBe('vai ao 2º turno');
+    expect(rotuloSituacao(c('eleito'))).toBe('eleito');
+    expect(rotuloSituacao(c('não eleito'))).toBe('não eleito');
+    expect(rotuloSituacao(c(''))).toBe('—');
   });
 });
