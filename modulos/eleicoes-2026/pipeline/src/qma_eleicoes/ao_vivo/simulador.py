@@ -121,6 +121,8 @@ def _pct_texto(progresso: float, completo: bool) -> tuple[str, str]:
     """`pst` ("12,34") e `pstn` ("12.34"): nunca 100 antes de todos os municípios terminarem."""
     if completo:
         return "100,00", "100"
+    if progresso <= 0:
+        return "0,00", "0"
     truncado = min(int(progresso * 10_000) / 100, 99.99)
     return f"{truncado:.2f}".replace(".", ","), f"{truncado:.2f}"
 
@@ -135,9 +137,11 @@ def _arquivo(
     completo: bool,
     k: int,
     idg: int,
+    inicio: datetime = INICIO,
+    situacao_and: str | None = None,
 ) -> dict:
     """Um arquivo `-u.json` no formato do TSE (campos que o leitor e o robô usam)."""
-    agora = INICIO + timedelta(minutes=MINUTOS_POR_PASSO * k)
+    agora = inicio + timedelta(minutes=MINUTOS_POR_PASSO * k)
     pst, pstn = _pct_texto(progresso, completo)
     votos = estado["votos"]
     vencedor = None
@@ -160,7 +164,7 @@ def _arquivo(
         "ele": ELEICAO_2026_T2[cargo], "t": "2", "f": "o", "sup": "n", "tpabr": tpabr,
         "cdabr": cdabr, "dg": f"{agora:%d/%m/%Y}", "hg": f"{agora:%H:%M:%S}", "idg": str(idg),
         "dt": f"{agora:%d/%m/%Y}", "ht": f"{agora:%H:%M:%S}", "dv": "s", "tf": "n",
-        "and": "f" if completo else "p", "md": "n",
+        "and": situacao_and or ("f" if completo else "p"), "md": "n",
         "s": {"pst": pst, "pstn": pstn},
         "e": {"te": str(estado["te"]), "c": str(estado["c"]), "a": str(estado["a"])},
         "v": {
@@ -179,6 +183,28 @@ def _arquivo(
             }
         ],
     }  # fmt: skip
+
+
+class _Passo(dict):
+    """Um passo: arquivos apurados + (sob demanda) arquivos sem votos dos ainda não apurados.
+
+    Como o feed real do TSE, município sem apuração tem arquivo zerado (`and` "n", 0%), com
+    `idg`/`dg`/`hg` constantes. Eles são criados só quando pedidos e guardados no cache
+    compartilhado da sequência; não entram em `items()`.
+    """
+
+    def __init__(self, apurados: dict[str, dict], zerado: Callable[[str], dict | None]):
+        super().__init__(apurados)
+        self._zerado = zerado
+
+    def __missing__(self, url: str) -> dict:
+        arq = self._zerado(url)
+        if arq is None:
+            raise KeyError(url)
+        return arq
+
+    def __contains__(self, url: object) -> bool:
+        return super().__contains__(url) or self._zerado(url) is not None  # type: ignore[arg-type]
 
 
 def _url_mun(cargo: Cargo, uf: str, tse: str) -> str:
@@ -206,11 +232,14 @@ def gerar_sequencia(
     passos: int = 40,
     semente: int = 25,
     capitais: Collection[tuple[str, str]] = (),
+    municipios_2026: Collection[tuple[str, str]] = (),
+    inicio: datetime = INICIO,
 ) -> Iterator[dict[str, dict]]:
     """Gera `passos` retratos da apuração; cada um é `{url: arquivo}`.
 
-    `capitais`: pares (UF, código TSE) apurados primeiro. Municípios ainda sem apuração não
-    têm arquivo no passo (o servidor responde 404, como o TSE). O último passo reproduz
+    `capitais`: pares (UF, código TSE) apurados primeiro. `municipios_2026`: pares (UF, TSE)
+    de todos os municípios de 2026; os ausentes de 2022 e os ainda não apurados têm arquivo
+    zerado (como o feed do TSE), nunca 404. `inicio`: relógio simulado do passo 0. O último passo reproduz
     exatamente o resultado oficial. O gerador é preguiçoso: arquivos de municípios já
     concluídos são reaproveitados (mesmo objeto) e nada além do passo atual é mantido.
     """
@@ -236,6 +265,31 @@ def gerar_sequencia(
     aptos_uf: dict[tuple[Cargo, str], int] = {}
     for m in municipais:
         aptos_uf[(m.cargo, m.uf)] = aptos_uf.get((m.cargo, m.uf), 0) + m.resultado.aptos
+
+    # municípios sem votos: url → (cargo, uf, tse, aptos); o arquivo é criado só quando pedido
+    aptos_mun = {(m.cargo, m.uf, m.tse): m.resultado.aptos for m in municipais}
+    zeros: dict[str, tuple[Cargo, str, str]] = {}
+    for uf, tse in {*((m.uf, m.tse) for m in municipais), *map(tuple, municipios_2026)}:
+        zeros[_url_mun("presidente", uf, tse)] = ("presidente", uf, tse)
+        if uf in elenco_gov:
+            zeros[_url_mun("governador", uf, tse)] = ("governador", uf, tse)
+    cache_zeros: dict[str, dict] = {}
+
+    def zerado(url: str) -> dict | None:
+        if url not in cache_zeros:
+            chave = zeros.get(url)
+            if chave is None:
+                return None
+            cargo, uf, tse = chave
+            estado = {
+                "te": aptos_mun.get(chave, 0), "c": 0, "a": 0, "vb": 0, "tvn": 0, "vv": 0,
+                "votos": {},
+            }  # fmt: skip
+            elenco = elenco_pres if cargo == "presidente" else elenco_gov[uf]
+            cache_zeros[url] = _arquivo(
+                cargo, "mu", tse, estado, elenco, 0.0, False, 0, IDG_BASE - 1, inicio, "n"
+            )
+        return cache_zeros[url]
 
     prontos: dict[tuple[Cargo, str, str], dict] = {}  # municípios em 100%: arquivo reaproveitado
     ultimo_idg: dict[str, int] = {}
@@ -269,7 +323,7 @@ def gerar_sequencia(
                 continue
             elenco = elenco_pres if m.cargo == "presidente" else elenco_gov[m.uf]
             arq = _arquivo(
-                m.cargo, "mu", m.tse, estado, elenco, fracao[0] / fracao[1], completo, k, idg
+                m.cargo, "mu", m.tse, estado, elenco, fracao[0] / fracao[1], completo, k, idg, inicio
             )
             arquivos[url] = arq
             if completo:
@@ -295,7 +349,7 @@ def gerar_sequencia(
                 publicar(
                     url_resultado_2026(cargo, uf.lower(), None, ELEICAO_2026_T2[cargo]),
                     lambda i, c=cargo, u=uf, s=soma, e=elenco, p=prog, f=completo: _arquivo(
-                        c, "uf", u.lower(), s, e, p, f, k, i
+                        c, "uf", u.lower(), s, e, p, f, k, i, inicio
                     ),
                     chave in mudou,
                 )
@@ -309,7 +363,7 @@ def gerar_sequencia(
         publicar(
             url_br,
             lambda i, s=soma_br, p=prog_br, f=completo_br: _arquivo(
-                "presidente", "br", "br", s, elenco_pres, p, f, k, i
+                "presidente", "br", "br", s, elenco_pres, p, f, k, i, inicio
             ),
             any(c == "presidente" for c, _ in mudou),
         )
@@ -323,11 +377,11 @@ def gerar_sequencia(
             abr.append({"cdabr": uf.lower(), "and": "f" if fim else "p", "s": {"pst": pst, "pstn": pstn}})
         pst, pstn = _pct_texto(prog_br, completo_br)
         abr.insert(0, {"cdabr": "br", "and": "f" if completo_br else "p", "s": {"pst": pst, "pstn": pstn}})
-        agora = INICIO + timedelta(minutes=MINUTOS_POR_PASSO * k)
+        agora = inicio + timedelta(minutes=MINUTOS_POR_PASSO * k)
         arquivos[url_ab] = {
             "dg": f"{agora:%d/%m/%Y}", "hg": f"{agora:%H:%M:%S}", "idg": str(idg), "abr": abr,
         }
-        yield arquivos
+        yield _Passo(arquivos, zerado)
 
 
 def baixar_simulado(sequencia: Iterator[dict[str, dict]]) -> Callable:
@@ -335,7 +389,7 @@ def baixar_simulado(sequencia: Iterator[dict[str, dict]]) -> Callable:
 
     O arquivo de andamento (`-ab.json`) é o primeiro pedido de cada ciclo: a 1ª chamada
     serve o passo 0 e cada chamada seguinte avança um passo (depois do último, repete-o).
-    Os demais URLs são servidos do passo corrente; URL sem arquivo → `ErroDownload` 404.
+    Os demais URLs são servidos do passo corrente; URL desconhecida → `ErroDownload` 404.
     """
     url_ab = url_andamento_2026(_ELEICAO_BR)
     iniciado = False
@@ -348,8 +402,9 @@ def baixar_simulado(sequencia: Iterator[dict[str, dict]]) -> Callable:
             if iniciado:
                 atual = next(sequencia, atual)
             iniciado = True
-        if url not in atual:
-            raise ErroDownload(url, 404)
-        return atual[url]
+        try:
+            return atual[url]
+        except KeyError:
+            raise ErroDownload(url, 404) from None
 
     return baixar

@@ -2,6 +2,8 @@ import json
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
+import pytest
+
 from test_coleta_ao_vivo import MUNICIPIOS, Servidor
 
 from qma_eleicoes.ao_vivo.coleta import Coletor
@@ -225,12 +227,10 @@ def test_cli_simular_usa_o_baixar_do_simulador(tmp_path):
     (dados / "eleicoes-2026").mkdir()
     (dados / "comum" / "municipios.json").write_text("[]", encoding="utf-8")
     (dados / "eleicoes-2026" / "base-ao-vivo.json").write_text("{}", encoding="utf-8")
-    import pytest
-
     with pytest.raises(RuntimeError, match="parar"):
         main(
             ["--simular", "--local", str(tmp_path / "saida"), "--dados", str(dados)],
-            _baixar_simulado=lambda municipios: baixar,
+            _baixar_simulado=lambda municipios, inicio: baixar,
         )
     assert pedidos == [URL_CONFIG_GOVERNADOR_T2]
 
@@ -315,7 +315,6 @@ def _rodar_com(pub, tmp_path, projetar):
 
 def test_hora_interpreta_em_sao_paulo_mesmo_com_tz_utc(monkeypatch):
     import argparse
-    import pytest
 
     from qma_eleicoes.ao_vivo import __main__ as cli
 
@@ -337,7 +336,6 @@ def test_hora_interpreta_em_sao_paulo_mesmo_com_tz_utc(monkeypatch):
 
 
 def test_ajuda_documenta_ate_sem_virada_de_dia(capsys):
-    import pytest
 
     from qma_eleicoes.ao_vivo.__main__ import main
 
@@ -345,3 +343,26 @@ def test_ajuda_documenta_ate_sem_virada_de_dia(capsys):
         main(["--help"])
     saida = " ".join(capsys.readouterr().out.split())
     assert "hoje" in saida and "sem virada" in saida
+
+
+def test_cli_data_simulada_hoje_passa_inicio_de_hoje(tmp_path):
+    from qma_eleicoes.ao_vivo.__main__ import main
+
+    recebido = []
+
+    def simulado(municipios, inicio):
+        recebido.append(inicio)
+        raise RuntimeError("parar")
+
+    dados = tmp_path / "dados"
+    (dados / "comum").mkdir(parents=True)
+    (dados / "eleicoes-2026").mkdir()
+    (dados / "comum" / "municipios.json").write_text("[]", encoding="utf-8")
+    (dados / "eleicoes-2026" / "base-ao-vivo.json").write_text("{}", encoding="utf-8")
+    args = ["--simular", "--local", str(tmp_path / "s"), "--dados", str(dados)]
+    for extra in ([], ["--data-simulada", "hoje"]):
+        with pytest.raises(RuntimeError):
+            main(args + extra, _baixar_simulado=simulado)
+    assert recebido[0] is None
+    assert recebido[1].date() == datetime.now(ZoneInfo("America/Sao_Paulo")).date()
+    assert (recebido[1].hour, recebido[1].minute) == (17, 0)

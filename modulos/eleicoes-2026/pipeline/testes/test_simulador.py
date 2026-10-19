@@ -16,6 +16,8 @@ from qma_eleicoes.modelo import Resultado, VotoCandidato
 LULA, BOLSONARO = 60_345_999, 58_206_354
 UFS = {"AL": 12, "SP": 30, "ZZ": 4}  # UF → nº de municípios
 GOVERNADOR = {"AL", "SP"}
+SO_2026 = ("SP", "73709")  # município que não existe nos dados de 2022
+MUNIS_2026 = {(uf, f"{i + 1:05d}") for uf, n in UFS.items() for i in range(n)} | {SO_2026}
 URL_BR = url_resultado_2026("presidente", "br", None, "6258")
 URL_AB = url_andamento_2026("6258")
 
@@ -57,15 +59,19 @@ def r2022():
 
 @pytest.fixture(scope="module")
 def passos(r2022):
-    return list(gerar_sequencia(r2022, passos=12, semente=1, capitais={("SP", "00001")}))
+    return list(
+        gerar_sequencia(
+            r2022, passos=12, semente=1, capitais={("SP", "00001")}, municipios_2026=MUNIS_2026
+        )
+    )
 
 
 def _votos(arquivo, cargo="presidente"):
     return {c.numero: c.votos for c in ler_resultado_2026(arquivo, cargo, uf="XX").candidatos}
 
 
-def _municipal(url):
-    return len(url.rsplit("/", 1)[1].split("-")[0]) > 2 and "-ab." not in url
+def _municipal(arq):
+    return arq.get("tpabr") == "mu"
 
 
 def test_ultimo_passo_igual_resultado_oficial_2022(passos, r2022):
@@ -118,7 +124,7 @@ def test_parciais_somam_e_progresso_ponderado(passos):
     for passo in passos[:-1]:
         soma = {13: 0, 22: 0}
         for url, arq in passo.items():
-            if "-c0001-" in url and _municipal(url):
+            if "-c0001-" in url and _municipal(arq):
                 for n, v in _votos(arq).items():
                     soma[n] += v
         assert _votos(passo[URL_BR]) == soma
@@ -163,14 +169,88 @@ def test_baixar_simulado_avanca_um_passo_por_andamento(r2022):
     assert ids[6:] == [ids[5]] * 2  # depois do último passo, repete
 
 
-def test_url_desconhecida_ou_municipio_sem_apuracao_da_404(r2022):
+def test_url_desconhecida_da_404(r2022):
     baixar = baixar_simulado(gerar_sequencia(r2022, passos=6, semente=1))
     baixar(URL_AB, forcar=True)
-    inexistente = url_resultado_2026("presidente", "sp", "99999", "6258")
-    for url in ("https://exemplo.invalido/x.json", inexistente):
-        with pytest.raises(ErroDownload) as e:
-            baixar(url, forcar=True)
-        assert e.value.status == 404
+    with pytest.raises(ErroDownload) as e:
+        baixar("https://exemplo.invalido/x.json", forcar=True)
+    assert e.value.status == 404
+
+
+def test_brasil_e_uf_existem_no_passo_0_com_pct_menor_que_100(passos):
+    for url in (URL_BR, url_resultado_2026("presidente", "sp", None, "6258")):
+        r = ler_resultado_2026(passos[0][url], "presidente")
+        assert r.pct_secoes_totalizadas < 100
+
+
+def _nao_iniciados(passo):
+    """URLs de presidente municipais de 2026 sem apuração no passo (só no mapa dos zerados)."""
+    todas = (url_resultado_2026("presidente", uf.lower(), t, "6258") for uf, t in sorted(MUNIS_2026))
+    return [u for u in todas if u not in dict.keys(passo)]
+
+
+def test_municipio_nao_iniciado_tem_arquivo_zerado_constante(passos):
+    urls = _nao_iniciados(passos[0])
+    assert len(urls) > 20
+    url = urls[0]
+    arq = passos[0][url]
+    r = ler_resultado_2026(arq, "presidente", uf="XX")
+    assert r.pct_secoes_totalizadas == 0 and r.comparecimento == 0
+    assert [c.votos for c in r.candidatos] == [0, 0]
+    assert arq["and"] == "n" and arq["s"]["pstn"] == "0"
+    assert all(c["st"] == "" for a in arq["carg"][0]["agr"] for p in a["par"] for c in p["cand"])
+    # constante enquanto não apurado: mesmo idg/dg/hg em todos os passos
+    for passo in passos:
+        if url not in dict.keys(passo):
+            assert (passo[url]["idg"], passo[url]["dg"], passo[url]["hg"]) == (
+                arq["idg"], arq["dg"], arq["hg"]
+            )
+    # e quando começa a apurar, o idg sobe
+    iniciado = next(p[url] for p in passos if url in dict.keys(p))
+    assert int(iniciado["idg"]) > int(arq["idg"])
+
+
+def test_municipio_so_de_2026_tem_arquivo_zerado_em_todos_os_passos(passos):
+    for cargo, cod in (("presidente", "6258"), ("governador", "6260")):
+        url = url_resultado_2026(cargo, "sp", SO_2026[1], cod)
+        arquivos = {json.dumps(p[url], sort_keys=True) for p in passos}
+        assert len(arquivos) == 1
+        r = ler_resultado_2026(passos[-1][url], cargo, uf="SP")
+        assert r.pct_secoes_totalizadas == 0 and r.validos == 0
+
+
+def test_coletor_e_montar_veem_aguardando_sem_erros(r2022):
+    from datetime import datetime
+
+    from qma_comum.municipios import Municipio
+    from qma_eleicoes.ao_vivo.coleta import Coletor
+    from qma_eleicoes.ao_vivo.montar import montar
+
+    munis = [Municipio(t, None, t, uf, False, t) for uf, t in sorted(MUNIS_2026)]
+    baixar = baixar_simulado(
+        gerar_sequencia(r2022, passos=12, semente=1, municipios_2026=MUNIS_2026)
+    )
+    coletor = Coletor(munis, ["AL", "SP"], _baixar=baixar, max_por_ciclo=10_000)
+    rel = coletor.ciclo()
+    assert rel.erros == []
+    base = {
+        "municipios": {
+            m.tse: {"uf": m.uf, "ibge": m.tse, "nome": m.nome, "slug": m.slug, "t2_2022": None}
+            for m in munis
+        },
+        "agregados_2022_t2": {"presidente": {}, "governador": {}},
+    }
+    arquivos = montar(coletor.resultados, coletor.horarios, base, agora=datetime(2026, 10, 25, 18), andamento=coletor.andamento)  # fmt: skip
+    so = next(m for m in arquivos["ao-vivo/municipios/sp.json"] if m["tse"] == SO_2026[1])
+    assert so["status"] == "aguardando" and so["pct_secoes"] == 0
+    assert any(r.pct_secoes_totalizadas == 0 for r in coletor.resultados.values())
+
+
+def test_inicio_simulado_define_dg_hg(r2022):
+    from datetime import datetime
+
+    passo = next(gerar_sequencia(r2022, passos=6, inicio=datetime(2026, 10, 25, 17, 0)))
+    assert passo[URL_BR]["dg"] == "25/10/2026" and passo[URL_BR]["hg"] == "17:00:00"
 
 
 def test_poucos_passos_rejeitado(r2022):
