@@ -1,6 +1,7 @@
 ---
 import Layout from '../components/Layout.astro';
 import BuscaMunicipio from '../components/BuscaMunicipio.astro';
+import { urlOg } from '../lib/cartao';
 
 const emBreve = [
   { nome: 'Monitor do Congresso', texto: 'Como votou cada deputado e senador do seu estado.' },
@@ -12,6 +13,7 @@ const emBreve = [
 ---
 <Layout
   titulo="Quem Manda Aqui"
+  imagemOg={urlOg("home")}
   descricao="Digite sua cidade e veja em quem ela votou em 2026, e o que mudou desde 2022. Dados oficiais do TSE, comparados por partido."
 >
   <section class="hero wrap">

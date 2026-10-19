@@ -6,6 +6,7 @@ import BarrasComparativas from '../../../components/BarrasComparativas.astro';
 import Mapa from '../../../components/Mapa.astro';
 import { UFS, lerComparacao, lerMetaObrigatoria, lerMunicipiosUF } from '../../../lib/dados';
 import { carregarOrdemNacional } from '../../../lib/ordemPartidos';
+import { urlOg } from '../../../lib/cartao';
 import { nomeUF } from '../../../lib/formato';
 import { coresDoMapa, corNoMapa } from '../../../lib/cores';
 import type { Resultado } from '../../../lib/tipos';
@@ -50,6 +51,7 @@ const legenda = montarLegenda(vencedores, (p) => corNoMapa(paleta, p));
 ---
 <Layout
   titulo={`Governador de ${nome} 2026`}
+  imagemOg={urlOg(`governador/${uf!.toLowerCase()}`)}
   descricao={`Resultado do 1º turno para governador em ${nome} em 2026, comparado com 2022 por partido.`}
 >
   <div class="pagina wrap">

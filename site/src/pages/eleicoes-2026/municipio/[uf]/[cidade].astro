@@ -5,6 +5,7 @@ import BarrasComparativas from '../../../../components/BarrasComparativas.astro'
 import ResultadoPrimeiroTurno from '../../../../components/ResultadoPrimeiroTurno.astro';
 import { UFS, lerMetaObrigatoria, lerMunicipiosUF } from '../../../../lib/dados';
 import { carregarOrdemNacional } from '../../../../lib/ordemPartidos';
+import { urlOg } from '../../../../lib/cartao';
 import { fraseDestaque } from '../../../../lib/frase';
 import { inteiro, nomeProprio, pct, pctSecoes } from '../../../../lib/formato';
 import { linhasParticipacao, type Medida } from '../../../../lib/participacao';
@@ -39,7 +40,7 @@ const medida = (x: Medida | null) =>
   x === null ? null : x.pct === null ? inteiro(x.n) : `${inteiro(x.n)} (${pct(x.pct)})`;
 const semResultado2022 = !pres.r2022;
 ---
-<Layout titulo={`Quem manda aqui em ${nome}/${uf}?`} descricao={`${frase}${frase.endsWith('.') ? '' : '.'} Resultado do 1º turno de 2026 em ${nome}/${uf}, comparado com 2022, por partido.`}>
+<Layout titulo={`Quem manda aqui em ${nome}/${uf}?`} imagemOg={urlOg(`municipio/${ufMin}/${m.slug}`)} descricao={`${frase}${frase.endsWith('.') ? '' : '.'} Resultado do 1º turno de 2026 em ${nome}/${uf}, comparado com 2022, por partido.`}>
   <div class="pagina wrap">
     <p class="nota crumbs">
       <a href="/eleicoes-2026">Eleições 2026</a> / <a href={`/eleicoes-2026/municipios/${ufMin}/`}>{uf}</a> / {nome}

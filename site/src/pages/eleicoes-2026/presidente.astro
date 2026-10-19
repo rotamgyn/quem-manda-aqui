@@ -7,6 +7,7 @@ import Mapa from '../../components/Mapa.astro';
 import RankingMudanca from '../../components/RankingMudanca.astro';
 import { UFS, lerComparacao, lerMetaObrigatoria, lerRanking } from '../../lib/dados';
 import { carregarOrdemNacional } from '../../lib/ordemPartidos';
+import { urlOg } from '../../lib/cartao';
 import { inteiro, nomeUF, pct } from '../../lib/formato';
 import { coresDoMapa, corNoMapa } from '../../lib/cores';
 import { montarLegenda, rotuloVencedor } from '../../lib/mapa';
@@ -35,6 +36,7 @@ const lider26 = exterior.r2026?.candidatos[0];
 ---
 <Layout
   titulo="Presidente 2026"
+  imagemOg={urlOg("presidente")}
   descricao="Resultado do 1º turno para presidente em 2026, comparado com 2022 por partido, e os 50 municípios onde o voto mais mudou."
 >
   <div class="pagina wrap">
