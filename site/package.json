@@ -10,11 +10,14 @@
     "dev": "astro dev",
     "prebuild": "node scripts/copiar-ranking.mjs && node scripts/gerar-busca.mjs",
     "build": "astro build",
-    "preview": "astro preview",
+    "preview": "npm run build && wrangler dev",
     "astro": "astro",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run --passWithNoTests",
+    "generate-types": "wrangler types",
+    "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
+    "@astrojs/cloudflare": "^14.4.1",
     "@resvg/resvg-js": "^2.6.2",
     "astro": "^7.3.5",
     "d3-geo": "^3.1.1",
@@ -30,6 +33,7 @@
     "@types/node": "^26.6.5",
     "@types/topojson-client": "^3.1.5",
     "typescript": "^6.0.3",
-    "vitest": "^5.0.3"
+    "vitest": "^5.0.3",
+    "wrangler": "^4.151.2"
   }
 }
