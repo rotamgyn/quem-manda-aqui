@@ -9,6 +9,7 @@ dependencies = [
     "truststore>=0.10.4",
     "tzdata",
     "boto3>=1.43.114",
+    "certifi>=2026.7.22",
 ]
 
 [dependency-groups]

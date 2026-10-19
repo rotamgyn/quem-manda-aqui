@@ -90,13 +90,35 @@ def test_controle_invalido_desliga_projecao():
     assert PublicadorR2("bkt", _cliente=c).ler_controle() == {"projecao_ligada": False}
 
 
-def test_outro_erro_do_r2_na_leitura_do_controle_propaga():
+def test_outro_erro_do_r2_na_leitura_do_controle_desliga_projecao_sem_vazar(caplog):
     class Negado(ClienteFalso):
         def get_object(self, **kw):
-            raise ClientError({"Error": {"Code": "AccessDenied", "Message": "x"}}, "GetObject")
+            raise ConnectionError("falha em https://conta.r2.cloudflarestorage.com/bkt/controle.json")
 
-    with pytest.raises(ClientError):
-        PublicadorR2("bkt", _cliente=Negado()).ler_controle()
+    r = PublicadorR2("bkt", _cliente=Negado()).ler_controle()
+    assert r == {"projecao_ligada": False}
+    assert "cloudflarestorage" not in caplog.text and "falha ao ler controle.json" in caplog.text
+
+
+def test_filtro_oculta_conta_bucket_e_url_no_traceback(caplog, monkeypatch):
+    import logging
+
+    monkeypatch.setenv("R2_ACCOUNT_ID", "conta999")
+    monkeypatch.setenv("R2_BUCKET", "meu-bucket")
+    log = logging.getLogger("qma_eleicoes.ao_vivo")
+    try:
+        raise OSError("https://conta999.r2.cloudflarestorage.com/meu-bucket/k e meu-bucket")
+    except OSError:
+        log.exception("erro em conta999")
+    assert "conta999" not in caplog.text and "meu-bucket" not in caplog.text
+    assert "cloudflarestorage" not in caplog.text and "***" in caplog.text
+
+
+def test_bundle_do_sistema_fora_do_windows_e_none(monkeypatch):
+    from qma_eleicoes.ao_vivo import publicar
+
+    monkeypatch.setattr(publicar.sys, "platform", "linux")
+    assert publicar._bundle_do_sistema() is None
 
 
 def test_publicador_local_grava_as_mesmas_chaves(tmp_path):

@@ -329,6 +329,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "boto3" },
+    { name = "certifi" },
     { name = "httpx" },
     { name = "pandas" },
     { name = "truststore" },
@@ -343,6 +344,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "boto3", specifier = ">=1.43.114" },
+    { name = "certifi", specifier = ">=2026.7.22" },
     { name = "httpx" },
     { name = "pandas" },
     { name = "truststore", specifier = ">=0.10.4" },

@@ -102,7 +102,7 @@ def test_ciclo_sobrevive_a_erro(tmp_path):
     assert n == 3  # o laço seguiu depois do erro
     assert len(publicados) == 2  # o ciclo com erro não publicou nada
     erro = publicados[0]["erro_ultimo_ciclo"]
-    assert erro.startswith("18:00 — ") and "quebrado" in erro
+    assert erro == "18:00 — dados do TSE em formato inesperado"
     assert publicados[0]["arquivos_com_erro"] == 0
     assert "erro_ultimo_ciclo" not in publicados[1]  # o seguinte, limpo, não repete o erro
 
@@ -135,7 +135,7 @@ def test_falha_de_publicacao_nao_mata_o_laco(tmp_path):
         coletor, BASE, pub, intervalo=60, ate=INICIO + timedelta(seconds=61), **tempo.kw()
     )
     assert n == 2
-    assert "R2 fora do ar" in _estado(tmp_path)["erro_ultimo_ciclo"]
+    assert _estado(tmp_path)["erro_ultimo_ciclo"] == "18:00 — falha na publicação"
 
 
 def test_termina_com_100(tmp_path):
@@ -217,3 +217,115 @@ def test_cli_simular_sem_simulador_da_erro_claro():
 
     with pytest.raises(SystemExit, match="Tarefa 4"):
         main(["--simular", "pasta-qualquer", "--local", "x"])
+
+
+def test_excecao_com_url_do_r2_nao_vaza_para_estado_nem_log(tmp_path, caplog, monkeypatch):
+    monkeypatch.setenv("R2_ACCOUNT_ID", "conta123")
+    monkeypatch.setenv("R2_BUCKET", "bucket-secreto")
+    tempo = Tempo()
+    coletor = Coletor(MUNICIPIOS, ["DF"], _baixar=ServidorAndamento(), _relogio=tempo.monotonic)
+    pub = PublicadorLocal(tmp_path)
+    original = pub.publicar
+    chamadas = []
+
+    def vaza(arquivos):
+        chamadas.append(1)
+        if len(chamadas) == 1:
+            raise OSError("Could not connect to https://conta123.r2.cloudflarestorage.com/bucket-secreto/estado.json")
+        original(arquivos)
+
+    pub.publicar = vaza
+    with caplog.at_level("DEBUG"):
+        executar(coletor, BASE, pub, intervalo=60, ate=INICIO + timedelta(seconds=61), **tempo.kw())
+    bruto = (tmp_path / "ao-vivo" / "estado.json").read_text(encoding="utf-8")
+    for segredo in ("conta123", "bucket-secreto", "cloudflarestorage"):
+        assert segredo not in bruto
+        assert segredo not in caplog.text
+    assert "falha na publicação" in bruto
+    assert "ciclo falhou" in caplog.text  # o log existe, só que oculto
+
+
+def test_falha_inesperada_tem_mensagem_generica(tmp_path):
+    from qma_eleicoes.ao_vivo.coleta import RelatorioCiclo
+
+    tempo = Tempo()
+
+    class Estranho:
+        resultados, horarios, andamento, ufs_governador = {}, {}, {}, []
+        chamadas = 0
+
+        def ciclo(self, prazo=None):
+            self.chamadas += 1
+            if self.chamadas == 1:
+                raise RuntimeError("detalhe interno")
+            return RelatorioCiclo()
+
+    executar(
+        Estranho(), BASE, PublicadorLocal(tmp_path), intervalo=60,
+        ate=INICIO + timedelta(seconds=61), **tempo.kw(),
+    )  # fmt: skip
+    assert _estado(tmp_path)["erro_ultimo_ciclo"] == "18:00 — falha inesperada"
+
+
+def test_falha_no_controle_ou_na_projecao_nao_bloqueia_a_publicacao(tmp_path, caplog):
+    class ControleQuebrado(PublicadorLocal):
+        def ler_controle(self):
+            raise ConnectionError("R2 fora")
+
+    _rodar_com(ControleQuebrado(tmp_path), tmp_path, lambda e, c, a: {"x": 1})
+    estado = _estado(tmp_path)
+    assert "projecao" not in estado and "erro_ultimo_ciclo" not in estado
+    assert "projeção ignorada" in caplog.text
+
+
+def test_falha_no_gancho_de_projecao_nao_bloqueia_a_publicacao(tmp_path):
+    def quebra(estado, controle, agora):
+        raise ZeroDivisionError("boom")
+
+    _rodar_com(PublicadorLocal(tmp_path), tmp_path, quebra)
+    estado = _estado(tmp_path)
+    assert "projecao" not in estado and "erro_ultimo_ciclo" not in estado
+    assert (tmp_path / "ao-vivo" / "municipios" / "go.json").exists()
+
+
+def _rodar_com(pub, tmp_path, projetar):
+    tempo = Tempo()
+    coletor = Coletor(MUNICIPIOS, ["DF"], _baixar=ServidorAndamento(), _relogio=tempo.monotonic)
+    executar(
+        coletor, BASE, pub, intervalo=60, ate=INICIO + timedelta(seconds=1),
+        projetar_bloco=projetar, **tempo.kw(),
+    )  # fmt: skip
+
+
+def test_hora_interpreta_em_sao_paulo_mesmo_com_tz_utc(monkeypatch):
+    import argparse
+    import pytest
+
+    from qma_eleicoes.ao_vivo import __main__ as cli
+
+    monkeypatch.setenv("TZ", "UTC")
+    instante = datetime(2026, 10, 25, 2, 0, tzinfo=ZoneInfo("UTC"))  # 23:00 de 24/10 em SP
+
+    class Falso(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return instante.astimezone(tz)
+
+    monkeypatch.setattr(cli, "datetime", Falso)
+    ate = cli._hora("22:30")
+    assert (ate.year, ate.month, ate.day, ate.hour, ate.minute) == (2026, 10, 24, 22, 30)
+    assert ate.utcoffset() == timedelta(hours=-3)
+    for ruim in ("", "abc", "12", "25:00", "12:60", "1:2:3", "12:3x"):
+        with pytest.raises(argparse.ArgumentTypeError):
+            cli._hora(ruim)
+
+
+def test_ajuda_documenta_ate_sem_virada_de_dia(capsys):
+    import pytest
+
+    from qma_eleicoes.ao_vivo.__main__ import main
+
+    with pytest.raises(SystemExit):
+        main(["--help"])
+    saida = " ".join(capsys.readouterr().out.split())
+    assert "hoje" in saida and "sem virada" in saida

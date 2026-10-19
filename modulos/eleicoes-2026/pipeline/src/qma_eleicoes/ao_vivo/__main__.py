@@ -33,7 +33,7 @@ def _hora(texto: str) -> datetime:
 def _parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="python -m qma_eleicoes.ao_vivo")
     p.add_argument("--intervalo", type=float, default=60.0, help="segundos entre inícios de ciclo")
-    p.add_argument("--ate", type=_hora, help="HH:MM (São Paulo) em que o robô encerra")
+    p.add_argument("--ate", type=_hora, help="HH:MM de hoje (America/Sao_Paulo, independe do TZ da máquina; sem virada de dia) em que o robô encerra")
     p.add_argument("--simular", metavar="PASTA", help="reproduz um ensaio gravado (Tarefa 4)")
     p.add_argument("--local", metavar="PASTA", help="grava em disco em vez de publicar no R2")
     p.add_argument("--prefixo", default=PREFIXO_PADRAO, help="prefixo das chaves (ensaio/, teste/)")

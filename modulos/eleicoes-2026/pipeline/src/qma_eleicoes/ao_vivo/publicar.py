@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 import ssl
 import sys
 import tempfile
@@ -55,9 +56,38 @@ def _bundle_do_sistema() -> str | None:
         for der, codificacao, _ in ssl.enum_certificates(loja):
             if codificacao == "x509_asn":
                 pems.append(ssl.DER_cert_to_PEM_cert(der))
-    arquivo = Path(tempfile.gettempdir()) / "qma-ca-bundle.pem"
-    arquivo.write_text(os.linesep.join(pems), encoding="ascii")
-    return str(arquivo)
+    fd, caminho = tempfile.mkstemp(prefix="qma-ca-", suffix=".pem")  # arquivo único
+    with os.fdopen(fd, "w", encoding="ascii", newline="\n") as f:
+        f.write("\n".join(pems))
+    return caminho
+
+
+_URL_R2 = re.compile(r"https?://[^\s/]*r2\.cloudflarestorage\.com\S*", re.IGNORECASE)
+
+
+def ocultar(texto: str) -> str:
+    """Troca endpoint/URL do R2, id da conta e bucket por `***` (nunca vão para log/JSON)."""
+    texto = _URL_R2.sub("***", texto)
+    for var in ("R2_ACCOUNT_ID", "R2_BUCKET"):
+        valor = os.environ.get(var)
+        if valor:
+            texto = texto.replace(valor, "***")
+    return texto
+
+
+class FiltroSegredos(logging.Filter):
+    """Aplica `ocultar` à mensagem e ao traceback de todo registro do logger."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        record.msg, record.args = ocultar(record.getMessage()), None
+        if record.exc_info:
+            record.exc_text = ocultar(logging.Formatter().formatException(record.exc_info))
+        elif record.exc_text:
+            record.exc_text = ocultar(record.exc_text)
+        return True
+
+
+log.addFilter(FiltroSegredos())
 
 
 class _Publicador:
@@ -113,7 +143,11 @@ class PublicadorR2(_Publicador):
         except ClientError as e:
             if e.response.get("Error", {}).get("Code") in ("NoSuchKey", "404"):
                 return dict(CONTROLE_PADRAO)
-            raise
+            log.warning("falha ao ler controle.json; projeção desligada: %s", ocultar(repr(e)))
+            return dict(CONTROLE_PADRAO)
+        except Exception as e:  # rede, credenciais...: nunca bloqueia a publicação
+            log.warning("falha ao ler controle.json; projeção desligada: %s", ocultar(repr(e)))
+            return dict(CONTROLE_PADRAO)
         return _controle(resposta["Body"].read())
 
 
