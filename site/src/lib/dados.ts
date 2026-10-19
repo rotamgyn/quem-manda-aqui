@@ -1,6 +1,7 @@
 // Leitura, em tempo de build, de dados que ficam fora de site/ (dados/ e dados-comuns/).
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import type { Topology } from 'topojson-specification';
 import type { Cargo, Comparacao, ItemRanking, Meta, MunicipioComparado } from './tipos';
 
 const raiz = () => resolve(process.cwd(), '..');
@@ -108,4 +109,10 @@ export function lerMetaObrigatoria(): Meta {
   const meta = lerMeta();
   if (!meta) throw new Error('dados/eleicoes-2026/meta.json não encontrado: gere os dados antes de montar o site.');
   return meta;
+}
+
+/** Malha TopoJSON em `dados/comum/malhas`: `br` (UFs do Brasil) ou sigla da UF (municípios). */
+export function lerMalha(uf: string): Topology {
+  const nome = uf.toLowerCase() === 'br' ? 'br-uf' : uf.toLowerCase();
+  return JSON.parse(readFileSync(resolve(raiz(), 'dados/comum/malhas', `${nome}.json`), 'utf-8')) as Topology;
 }

@@ -1,0 +1,108 @@
+---
+// Mapa SVG gerado no build. Cada região é um <path> com <title> acessível, data-ibge/data-uf
+// (para a página ao vivo) e, quando há link, é clicável. Sempre acompanhado de tabela alternativa.
+import { lerMalha } from '../lib/dados';
+import { caminhosSVG, siglaDaUF, type ItemLegenda } from '../lib/mapa';
+
+interface Props {
+  /** "br" para o mapa do Brasil por UF, ou a sigla da UF para o mapa municipal. */
+  uf: string;
+  /** código IBGE (município) ou sigla (UF) → cor (referência CSS). */
+  cores: Record<string, string>;
+  /** código → texto acessível "Nome — vencedor 2026: PARTIDO (xx,x%)". */
+  rotulos: Record<string, string>;
+  links?: Record<string, string>;
+  /** Identificador único do mapa na página. */
+  id: string;
+  /** Legenda de uma frase sobre o que o mapa mostra. */
+  legendaMapa: string;
+  legenda: ItemLegenda[];
+  /** Códigos com contorno destacado (ex.: municípios onde o mais votado mudou). */
+  destacar?: string[];
+  rotuloDestaque?: string;
+  /** Códigos sem dado do ano de comparação: hachura. */
+  semDados?: string[];
+  rotuloSemDados?: string;
+}
+const { uf, cores, rotulos, links = {}, id, legendaMapa, legenda, destacar = [], rotuloDestaque, semDados = [], rotuloSemDados } = Astro.props;
+
+const L = 600;
+const A = 600;
+const brasil = uf.toLowerCase() === 'br';
+const chave = (codigo: string) => (brasil ? (siglaDaUF(codigo) ?? codigo) : codigo);
+const realce = new Set(destacar);
+const vazios = new Set(semDados);
+const todos = caminhosSVG(lerMalha(uf), L, A).map((c) => ({ ...c, chave: chave(c.codigo) }));
+// destacados por último, para o contorno não ficar sob os vizinhos
+const caminhos = [...todos.filter((c) => !realce.has(c.chave)), ...todos.filter((c) => realce.has(c.chave))];
+const hachura = `hachura-${id}`;
+// a tabela lista também quem não tem polígono na malha (ex.: município instalado depois da malha)
+const linhas = Object.keys(rotulos)
+  .map((chave) => {
+    const c = { chave };
+    const texto = rotulos[c.chave] ?? c.chave;
+    const i = texto.indexOf(' — ');
+    return { chave: c.chave, nome: i < 0 ? texto : texto.slice(0, i), resultado: i < 0 ? '' : texto.slice(i + 3), href: links[c.chave] };
+  })
+  .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+---
+<figure class="mapa">
+  <figcaption>{legendaMapa}</figcaption>
+  <svg viewBox={`0 0 ${L} ${A}`} role="group" aria-label={legendaMapa} xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <pattern id={hachura} width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+        <rect width="6" height="6" class="h-fundo" />
+        <line x1="0" y1="0" x2="0" y2="6" class="h-linha" />
+      </pattern>
+    </defs>
+    {caminhos.map((c) => {
+      const vazio = vazios.has(c.chave);
+      const fill = vazio ? `url(#${hachura})` : (cores[c.chave] ?? 'var(--outros)');
+      const attrs = brasil ? { 'data-uf': c.chave } : { 'data-ibge': c.codigo };
+      const classe = realce.has(c.chave) ? 'regiao virou' : 'regiao';
+      const rotulo = rotulos[c.chave] ?? c.chave;
+      const path = <path d={c.d} fill={fill} class={classe} {...attrs}><title>{rotulo}</title></path>;
+      return links[c.chave] ? <a href={links[c.chave]}>{path}</a> : path;
+    })}
+  </svg>
+  <ul class="legenda" aria-label="Legenda do mapa">
+    {legenda.map((i) => <li><span class="amostra" style={`background:${i.cor}`}></span>{i.rotulo}</li>)}
+    {semDados.length > 0 && rotuloSemDados && <li><span class="amostra hachurado"></span>{rotuloSemDados}</li>}
+    {destacar.length > 0 && rotuloDestaque && <li><span class="amostra contorno"></span>{rotuloDestaque}</li>}
+  </ul>
+  <details>
+    <summary>Ver como tabela</summary>
+    <div class="tabela-rolagem">
+      <table class="tabela">
+        <caption class="sr">{legendaMapa}</caption>
+        <thead><tr><th scope="col">{brasil ? 'Estado' : 'Município'}</th><th scope="col">Resultado</th></tr></thead>
+        <tbody>
+          {linhas.map((l) => (
+            <tr>
+              <th scope="row">{l.href ? <a href={l.href}>{l.nome}</a> : l.nome}</th>
+              <td>{l.resultado || '—'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </details>
+</figure>
+<style>
+  .mapa { margin: 1rem 0; }
+  .mapa figcaption { font-weight: 700; margin-bottom: 0.5rem; }
+  svg { display: block; width: 100%; height: auto; max-height: 80vh; background: var(--cartao); border: 1px solid var(--linha); border-radius: var(--r-m); }
+  .regiao { stroke: var(--cartao); stroke-width: 0.35; stroke-linejoin: round; }
+  .regiao.virou { stroke: var(--tinta); stroke-width: 1.6; }
+  a:hover .regiao, a:focus-visible .regiao { stroke: var(--tinta); stroke-width: 1.6; }
+  a:focus-visible { outline: none; }
+  .h-fundo { fill: var(--cartao); }
+  .h-linha { stroke: var(--tinta-3); stroke-width: 1.4; }
+  .legenda { list-style: none; padding: 0; margin: 0.6rem 0; display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; font-size: var(--t-xs); }
+  .legenda li { display: inline-flex; align-items: center; gap: 0.4rem; }
+  .amostra { width: 1rem; height: 1rem; border-radius: 3px; border: 1px solid var(--linha-forte); flex: none; }
+  .amostra.hachurado { background: repeating-linear-gradient(45deg, var(--cartao) 0 3px, var(--tinta-3) 3px 4px); }
+  .amostra.contorno { background: var(--cartao); border: 3px solid var(--tinta); }
+  summary { cursor: pointer; font-weight: 700; padding: 0.4rem 0; }
+  details .tabela-rolagem { max-height: 24rem; overflow-y: auto; }
+</style>

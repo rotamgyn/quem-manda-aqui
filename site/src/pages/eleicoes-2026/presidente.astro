@@ -3,16 +3,33 @@ import Layout from '../../components/Layout.astro';
 import Fonte from '../../components/Fonte.astro';
 import ResultadoPrimeiroTurno from '../../components/ResultadoPrimeiroTurno.astro';
 import BarrasComparativas from '../../components/BarrasComparativas.astro';
+import Mapa from '../../components/Mapa.astro';
 import RankingMudanca from '../../components/RankingMudanca.astro';
-import { lerComparacao, lerMetaObrigatoria, lerRanking } from '../../lib/dados';
+import { UFS, lerComparacao, lerMetaObrigatoria, lerRanking } from '../../lib/dados';
 import { carregarOrdemNacional } from '../../lib/ordemPartidos';
-import { inteiro, pct } from '../../lib/formato';
+import { inteiro, nomeUF, pct } from '../../lib/formato';
+import { corDoPartidoMapa } from '../../lib/cores';
+import { montarLegenda, rotuloVencedor } from '../../lib/mapa';
 
 carregarOrdemNacional();
 const meta = lerMetaObrigatoria();
 const br = lerComparacao('br', 'presidente');
 const exterior = lerComparacao('zz', 'presidente');
 const ranking = lerRanking();
+const cores: Record<string, string> = {};
+const rotulos: Record<string, string> = {};
+const links: Record<string, string> = {};
+const vencedores: string[] = [];
+for (const uf of UFS) {
+  const c = lerComparacao(uf, 'presidente');
+  const v = c.vencedor_2026;
+  const lider = c.r2026?.candidatos.find((x) => x.partido === v);
+  cores[uf] = v ? corDoPartidoMapa(v) : 'var(--outros)';
+  rotulos[uf] = rotuloVencedor(nomeUF(c.nome ?? uf), 2026, v, lider?.pct ?? null);
+  links[uf] = `/eleicoes-2026/governador/${uf.toLowerCase()}/`;
+  if (v) vencedores.push(v);
+}
+const legenda = montarLegenda(vencedores, corDoPartidoMapa);
 const lider26 = exterior.r2026?.candidatos[0];
 ---
 <Layout
@@ -24,6 +41,19 @@ const lider26 = exterior.r2026?.candidatos[0];
     <p class="lede">Resultado nacional e comparação com o 1º turno de 2022, por partido.</p>
 
     <ResultadoPrimeiroTurno resultado={br.r2026} apuracaoCompleta={br.apuracao_completa} legenda="Resultado nacional do 1º turno para presidente em 2026" />
+
+    <h2>Quem venceu em cada estado</h2>
+    <Mapa uf="br" id="br" cores={cores} rotulos={rotulos} links={links} legenda={legenda} legendaMapa="Partido do candidato mais votado para presidente em cada estado, 1º turno de 2026" />
+    <p>
+      <label for="seletor-uf">Ver o mapa dos municípios de:</label>
+      <select id="seletor-uf" class="seletor" hidden>
+        <option value="">Escolha um estado</option>
+        {UFS.map((uf) => <option value={links[uf]}>{rotulos[uf].split(' — ')[0]}</option>)}
+      </select>
+      <noscript>
+        <ul class="lista-ufs">{UFS.map((uf) => <li><a href={links[uf]}>{rotulos[uf].split(' — ')[0]}</a></li>)}</ul>
+      </noscript>
+    </p>
 
     <h2>O que mudou desde 2022</h2>
     <BarrasComparativas linhas={br.partidos} titulo="Presidente, 1º turno: 2026 contra 2022" legenda="Porcentagem dos votos válidos por partido para presidente, 2022 e 2026, no Brasil" />
@@ -54,6 +84,15 @@ const lider26 = exterior.r2026?.candidatos[0];
     <Fonte fonte={`TSE, dados abertos de 2022 e 2026 (arquivo de 2026 gerado em ${meta.fonte_2026_dg_hg})`} atualizadoEm={meta.gerado_em} />
   </div>
 </Layout>
+<script>
+  const seletor = document.getElementById('seletor-uf') as HTMLSelectElement | null;
+  if (seletor) {
+    seletor.hidden = false;
+    seletor.addEventListener('change', () => { if (seletor.value) location.href = seletor.value; });
+  }
+</script>
 <style>
+  .seletor { font: inherit; padding: 0.4rem 0.6rem; border: 1px solid var(--linha-forte); border-radius: var(--r-s); background: var(--cartao); color: var(--tinta); }
+  .lista-ufs { columns: 3; list-style: none; padding: 0; }
   .aviso { border: 2px solid var(--aviso); color: var(--aviso); border-radius: var(--r-m); padding: 0.7rem 1rem; font-weight: 700; max-width: 65ch; }
 </style>

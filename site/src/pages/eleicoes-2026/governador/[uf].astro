@@ -3,9 +3,13 @@ import Layout from '../../../components/Layout.astro';
 import Fonte from '../../../components/Fonte.astro';
 import ResultadoPrimeiroTurno from '../../../components/ResultadoPrimeiroTurno.astro';
 import BarrasComparativas from '../../../components/BarrasComparativas.astro';
-import { UFS, lerComparacao, lerMetaObrigatoria } from '../../../lib/dados';
+import Mapa from '../../../components/Mapa.astro';
+import { UFS, lerComparacao, lerMetaObrigatoria, lerMunicipiosUF } from '../../../lib/dados';
 import { carregarOrdemNacional } from '../../../lib/ordemPartidos';
 import { nomeUF } from '../../../lib/formato';
+import { corDoPartidoMapa } from '../../../lib/cores';
+import type { Resultado } from '../../../lib/tipos';
+import { montarLegenda, rotuloVencedor } from '../../../lib/mapa';
 
 export function getStaticPaths() {
   return UFS.map((uf) => ({ params: { uf: uf.toLowerCase() } }));
@@ -16,6 +20,30 @@ const { uf } = Astro.params;
 const meta = lerMetaObrigatoria();
 const c = lerComparacao(uf!, 'governador');
 const nome = nomeUF(c.nome ?? uf!.toUpperCase());
+
+type Ano = { cores: Record<string, string>; rotulos: Record<string, string> };
+const m22: Ano = { cores: {}, rotulos: {} };
+const m26: Ano = { cores: {}, rotulos: {} };
+const links: Record<string, string> = {};
+const virou: string[] = [];
+const sem2022: string[] = [];
+const vencedores: string[] = [];
+for (const m of lerMunicipiosUF(uf!)) {
+  const g = m.governador;
+  links[m.ibge] = `/eleicoes-2026/municipio/${uf!.toLowerCase()}/${m.slug}/`;
+  const v22 = g?.vencedor_2022 ?? null;
+  const v26 = g?.vencedor_2026 ?? null;
+  const pct = (r: Resultado | null, v: string | null) => r?.candidatos.find((x) => x.partido === v)?.pct ?? null;
+  m22.cores[m.ibge] = v22 ? corDoPartidoMapa(v22) : 'var(--outros)';
+  m26.cores[m.ibge] = v26 ? corDoPartidoMapa(v26) : 'var(--outros)';
+  m22.rotulos[m.ibge] = rotuloVencedor(m.nome, 2022, v22, pct(g?.r2022 ?? null, v22));
+  m26.rotulos[m.ibge] = rotuloVencedor(m.nome, 2026, v26, pct(g?.r2026 ?? null, v26));
+  if (g?.virou === true) virou.push(m.ibge);
+  if (!v22) sem2022.push(m.ibge);
+  if (v22) vencedores.push(v22);
+  if (v26) vencedores.push(v26);
+}
+const legenda = montarLegenda(vencedores, corDoPartidoMapa);
 ---
 <Layout
   titulo={`Governador de ${nome} 2026`}
@@ -28,6 +56,14 @@ const nome = nomeUF(c.nome ?? uf!.toUpperCase());
 
     <ResultadoPrimeiroTurno resultado={c.r2026} apuracaoCompleta={c.apuracao_completa} legenda={`Resultado do 1º turno para governador em ${nome}, 2026`} />
 
+    <h2>Quem venceu em cada município</h2>
+    <div class="mapas">
+      <Mapa uf={uf!} id={`${uf}-2022`} cores={m22.cores} rotulos={m22.rotulos} links={links} legenda={legenda} destacar={virou} semDados={sem2022}
+        rotuloDestaque="O mais votado mudou desde 2022" rotuloSemDados="sem dados de 2022" legendaMapa={`Governador de ${nome}: partido mais votado em cada município, 1º turno de 2022`} />
+      <Mapa uf={uf!} id={`${uf}-2026`} cores={m26.cores} rotulos={m26.rotulos} links={links} legenda={legenda} destacar={virou}
+        rotuloDestaque="O mais votado mudou desde 2022" legendaMapa={`Governador de ${nome}: partido mais votado em cada município, 1º turno de 2026`} />
+    </div>
+
     <h2>O que mudou desde 2022</h2>
     <BarrasComparativas linhas={c.partidos} titulo={`Governador de ${nome}, 1º turno: 2026 contra 2022`} legenda={`Porcentagem dos votos válidos por partido para governador em ${nome}, 2022 e 2026`} />
     {c.volatilidade !== null && <p>Volatilidade de Pedersen no estado: <b>{c.volatilidade.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</b> (de 0 a 100).</p>}
@@ -35,3 +71,7 @@ const nome = nomeUF(c.nome ?? uf!.toUpperCase());
     <Fonte fonte={`TSE, dados abertos de 2022 e 2026 (arquivo de 2026 gerado em ${meta.fonte_2026_dg_hg})`} atualizadoEm={meta.gerado_em} />
   </div>
 </Layout>
+<style>
+  .mapas { display: grid; gap: 1rem; grid-template-columns: 1fr; }
+  @media (min-width: 900px) { .mapas { grid-template-columns: 1fr 1fr; } }
+</style>
