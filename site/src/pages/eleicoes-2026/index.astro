@@ -1,0 +1,75 @@
+---
+import Layout from '../../components/Layout.astro';
+import Fonte from '../../components/Fonte.astro';
+import { UFS, lerComparacao, lerMetaObrigatoria } from '../../lib/dados';
+import { carregarOrdemNacional } from '../../lib/ordemPartidos';
+import { corDoPartido } from '../../lib/cores';
+import { nomeUF, pct, pctApuracao, pp, rotuloSituacao } from '../../lib/formato';
+
+carregarOrdemNacional();
+const meta = lerMetaObrigatoria();
+const br = lerComparacao('br', 'presidente');
+const destaque = br.r2026?.candidatos.slice(0, 2) ?? [];
+const maiores = br.partidos
+  .filter((l) => l.delta_pp !== null)
+  .sort((a, b) => Math.abs(b.delta_pp as number) - Math.abs(a.delta_pp as number))
+  .slice(0, 3);
+const estados = UFS.map((uf) => ({ uf, nome: nomeUF(lerComparacao(uf, 'governador').nome ?? uf) }));
+---
+<Layout
+  titulo="Eleições 2026"
+  descricao="Panorama do 1º turno de 2026: resultado nacional para presidente, os partidos que mais mudaram desde 2022 e os municípios que mais mudaram de voto."
+>
+  <div class="pagina wrap">
+    <h1>Eleições 2026</h1>
+    <p class="lede">O 1º turno para presidente e governador, comparado com 2022, sempre por partido.</p>
+
+    <h2>Presidente, resultado nacional</h2>
+    {!br.apuracao_completa && br.r2026 && (
+      <p class="aviso" role="status">Apuração incompleta: {pctApuracao(br.r2026.pct_secoes_totalizadas)} das seções totalizadas. Os números podem mudar.</p>
+    )}
+    <ul class="cartoes">
+      {destaque.map((c) => (
+        <li class="cartao">
+          <i class="cor" style={`background:${corDoPartido(c.partido)}`} aria-hidden="true"></i>
+          <b>{c.nome_urna}</b>
+          <span>{c.partido}</span>
+          <strong>{pct(c.pct)}</strong>
+          <em>{rotuloSituacao(c, br.r2026!.validos)}</em>
+        </li>
+      ))}
+    </ul>
+    <p><a href="/eleicoes-2026/presidente">Ver o resultado completo e a comparação com 2022</a></p>
+
+    <h2>Os três partidos que mais mudaram</h2>
+    <ul class="mudancas">
+      {maiores.map((l) => (
+        <li><i class="cor" style={`background:${corDoPartido(l.partido)}`} aria-hidden="true"></i><b>{l.partido}</b>: {pct(l.pct_2022)} em 2022, {pct(l.pct_2026)} em 2026 ({pp(l.delta_pp)})</li>
+      ))}
+    </ul>
+
+    <h2>Municípios que mais mudaram</h2>
+    <p>Em quais cidades o voto para presidente mais se alterou entre 2022 e 2026, com filtros por estado e porte.</p>
+    <p><a class="botao" href="/eleicoes-2026/presidente#ranking">Ver o ranking dos 50 municípios</a></p>
+
+    <h2>Governador, por estado</h2>
+    <ul class="estados">
+      {estados.map((e) => <li><a href={`/eleicoes-2026/governador/${e.uf.toLowerCase()}/`}>{e.nome}</a></li>)}
+    </ul>
+
+    <Fonte fonte={`TSE, dados abertos de 2022 e 2026 (arquivo de 2026 gerado em ${meta.fonte_2026_dg_hg})`} atualizadoEm={meta.gerado_em} />
+  </div>
+</Layout>
+<style>
+  .aviso { border: 2px solid var(--aviso); color: var(--aviso); border-radius: var(--r-m); padding: 0.7rem 1rem; font-weight: 700; max-width: 65ch; }
+  .cartoes { list-style: none; padding: 0; margin: 1rem 0; display: grid; gap: 0.75rem; }
+  .cartao { background: var(--cartao); border: 1px solid var(--linha); border-radius: var(--r-m); padding: 0.9rem 1rem; display: grid; grid-template-columns: auto 1fr auto; gap: 0.1rem 0.6rem; align-items: baseline; max-width: none; }
+  .cartao strong { font-family: var(--f-display); font-stretch: 112%; font-size: var(--t-xl); grid-row: 1 / span 2; grid-column: 3; }
+  .cartao span, .cartao em { grid-column: 2; font-style: normal; color: var(--tinta-2); font-size: var(--t-xs); }
+  .cor { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 0.4rem; }
+  .mudancas { list-style: none; padding: 0; }
+  .botao { display: inline-flex; align-items: center; min-height: 48px; padding: 0 1.2rem; background: var(--tinta); color: var(--inverso); border-radius: 999px; font-weight: 700; text-decoration: none; }
+  .estados { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); gap: 0.25rem 1rem; max-width: none; }
+  .estados li { max-width: none; margin: 0; }
+  .estados a { display: inline-flex; align-items: center; min-height: 44px; }
+</style>

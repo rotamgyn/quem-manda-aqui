@@ -1,5 +1,7 @@
 import { describe, expect, test } from 'vitest';
-import { dividirLinhaCsv, formatarDataHora, lerEquivalenciasDeTexto } from './dados';
+import {
+  UFS, dividirLinhaCsv, formatarDataHora, lerComparacao, lerEquivalenciasDeTexto, lerMeta, lerMunicipiosUF, lerRanking,
+} from './dados';
 
 describe('dados', () => {
   test('csv com vírgula dentro de aspas', () => {
@@ -12,5 +14,25 @@ describe('dados', () => {
   test('data em horário de Brasília', () => {
     expect(formatarDataHora('2026-10-05T05:14:00+00:00')).toBe('05/10/2026 às 02:14');
     expect(formatarDataHora('lixo')).toBe('lixo');
+  });
+});
+
+describe('leitura dos dados gerados', () => {
+  test('comparação nacional de presidente tem partidos', () => {
+    const c = lerComparacao('br', 'presidente');
+    expect(c.partidos[0].partido).toBeTruthy();
+    expect(c.cargo).toBe('presidente');
+  });
+  test('municípios de GO incluem Goiânia (tse 93734)', () => {
+    expect(lerMunicipiosUF('go').some((m) => m.tse === '93734')).toBe(true);
+  });
+  test('27 UFs, com governador para cada uma', () => {
+    expect(UFS).toHaveLength(27);
+    expect(lerComparacao('go', 'governador').nome).toBe('GOIÁS');
+  });
+  test('ranking vem ordenado por volatilidade e meta existe', () => {
+    const r = lerRanking();
+    expect(r[0].volatilidade).toBeGreaterThanOrEqual(r[1].volatilidade);
+    expect(lerMeta()?.gerado_em).toBeTruthy();
   });
 });

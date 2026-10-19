@@ -1,0 +1,48 @@
+---
+import { corDoPartido } from '../lib/cores';
+import { pp } from '../lib/formato';
+import type { LinhaPartido } from '../lib/tipos';
+
+interface Props { linhas: LinhaPartido[]; max?: number }
+const { linhas, max = 12 } = Astro.props;
+// Precisa de carregarOrdemNacional() no frontmatter da página que usa este componente.
+
+const itens = linhas
+  .filter((l): l is LinhaPartido & { delta_pp: number } => l.delta_pp !== null)
+  .sort((a, b) => b.delta_pp - a.delta_pp)
+  .slice(0, max);
+
+const LARGURA = 360, EIXO = 180, METADE = 110, ALTURA_LINHA = 44;
+const maior = Math.max(1, ...itens.map((l) => Math.abs(l.delta_pp)));
+const altura = itens.length * ALTURA_LINHA + 4;
+const resumo = itens.map((l) => `${l.partido} ${pp(l.delta_pp)}`).join('; ');
+---
+{itens.length > 0 && (
+  <figure class="variacao">
+    <svg viewBox={`0 0 ${LARGURA} ${altura}`} role="img" aria-label={`Variação em pontos percentuais de 2022 para 2026: ${resumo}.`}>
+      <line x1={EIXO} x2={EIXO} y1="0" y2={altura} class="eixo" />
+      {itens.map((l, i) => {
+        const y = i * ALTURA_LINHA;
+        const w = (Math.abs(l.delta_pp) / maior) * METADE;
+        const x = l.delta_pp >= 0 ? EIXO : EIXO - w;
+        const xr = l.delta_pp >= 0 ? EIXO + w + 5 : EIXO - w - 5;
+        return (
+          <g>
+            <text x="0" y={y + 14} class="nome">{l.partido}</text>
+            <rect x={x} y={y + 20} width={Math.max(w, 1.5)} height="16" rx="2" style={`fill:${corDoPartido(l.partido)}`} />
+            <text x={xr} y={y + 33} class="valor" text-anchor={l.delta_pp >= 0 ? 'start' : 'end'}>{pp(l.delta_pp)}</text>
+          </g>
+        );
+      })}
+    </svg>
+    <figcaption class="nota">Variação em pontos percentuais, 2026 menos 2022. Barras à direita: ganhou; à esquerda: perdeu. Partidos que não concorreram nos dois anos ficam de fora; veja a tabela abaixo.</figcaption>
+  </figure>
+)}
+<style>
+  .variacao { margin: 1rem 0; max-width: 640px; }
+  svg { width: 100%; height: auto; display: block; }
+  .eixo { stroke: var(--linha-forte); stroke-width: 2; }
+  text { fill: var(--tinta); font-family: var(--f-texto); }
+  .nome { font-size: 13px; font-weight: 700; }
+  .valor { font-size: 12.5px; font-variant-numeric: tabular-nums; }
+</style>

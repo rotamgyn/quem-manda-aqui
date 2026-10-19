@@ -60,3 +60,32 @@ export function formatarDataHora(iso: string): string {
   );
   return `${p.day}/${p.month}/${p.year} às ${p.hour}:${p.minute}`;
 }
+
+/** As 27 unidades da federação (sem BR e sem o exterior, ZZ). */
+export const UFS: string[] = [
+  'AC', 'AL', 'AM', 'AP', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MG', 'MS', 'MT', 'PA',
+  'PB', 'PE', 'PI', 'PR', 'RJ', 'RN', 'RO', 'RR', 'RS', 'SC', 'SE', 'SP', 'TO',
+];
+
+const lerJson = <T>(...partes: string[]): T => JSON.parse(readFileSync(resolve(pastaDados(), ...partes), 'utf-8')) as T;
+
+/** Comparação 2022 × 2026 de uma abrangência ('br', sigla de UF ou 'zz' para o exterior). */
+export function lerComparacao(abr: string, cargo: Cargo): Comparacao {
+  return lerJson<Comparacao>('comparacoes', `${abr.toLowerCase()}-${cargo}.json`);
+}
+
+export function lerMunicipiosUF(uf: string): MunicipioComparado[] {
+  return lerJson<{ municipios: MunicipioComparado[] }>('municipios', `${uf.toLowerCase()}.json`).municipios;
+}
+
+/** Ranking nacional de volatilidade (presidente), já ordenado do maior para o menor. */
+export function lerRanking(): ItemRanking[] {
+  return lerJson<ItemRanking[]>('ranking-presidente.json');
+}
+
+/** Como `lerMeta`, mas falha o build se os dados ainda não foram gerados. */
+export function lerMetaObrigatoria(): Meta {
+  const meta = lerMeta();
+  if (!meta) throw new Error('dados/eleicoes-2026/meta.json não encontrado: gere os dados antes de montar o site.');
+  return meta;
+}

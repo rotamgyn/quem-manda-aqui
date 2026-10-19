@@ -1,0 +1,46 @@
+---
+import { inteiro, pct, pctApuracao, rotuloSituacao } from '../lib/formato';
+import type { Resultado } from '../lib/tipos';
+
+interface Props { resultado: Resultado | null; apuracaoCompleta: boolean; legenda: string }
+const { resultado, apuracaoCompleta, legenda } = Astro.props;
+---
+{!apuracaoCompleta && resultado && (
+  <p class="aviso" role="status">
+    Apuração incompleta: {pctApuracao(resultado.pct_secoes_totalizadas)} das seções totalizadas. Os números podem mudar até o fim da contagem.
+  </p>
+)}
+{resultado ? (
+  <>
+    <div class="tabela-rolagem">
+      <table class="tabela resultado">
+        <caption class="sr">{legenda}</caption>
+        <thead>
+          <tr><th scope="col">Candidato</th><th scope="col">Partido</th><th scope="col" class="num">Votos</th><th scope="col" class="num">% válidos</th><th scope="col">Situação</th></tr>
+        </thead>
+        <tbody>
+          {resultado.candidatos.map((c) => (
+            <tr>
+              <th scope="row">{c.nome_urna}</th>
+              <td>{c.partido}</td>
+              <td class="num">{inteiro(c.votos)}</td>
+              <td class="num">{pct(c.pct)}</td>
+              <td>{rotuloSituacao(c, resultado.validos)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+    <p class="nota">
+      Votos válidos: {inteiro(resultado.validos)} · brancos: {inteiro(resultado.brancos)} · nulos: {inteiro(resultado.nulos)} ·
+      abstenção: {inteiro(resultado.abstencao)} de {inteiro(resultado.aptos)} eleitores aptos.
+    </p>
+  </>
+) : (
+  <p>Resultado de 2026 ainda indisponível.</p>
+)}
+<style>
+  .aviso { border: 2px solid var(--aviso); color: var(--aviso); border-radius: var(--r-m); padding: 0.7rem 1rem; font-weight: 700; max-width: 65ch; }
+  .resultado .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .resultado th[scope="row"] { font-weight: 700; }
+</style>

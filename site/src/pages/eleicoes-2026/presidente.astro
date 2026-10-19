@@ -1,0 +1,61 @@
+---
+import Layout from '../../components/Layout.astro';
+import Fonte from '../../components/Fonte.astro';
+import ResultadoPrimeiroTurno from '../../components/ResultadoPrimeiroTurno.astro';
+import TabelaComparativa from '../../components/TabelaComparativa.astro';
+import BarrasVariacao from '../../components/BarrasVariacao.astro';
+import RankingMudanca from '../../components/RankingMudanca.astro';
+import { lerComparacao, lerMetaObrigatoria, lerRanking } from '../../lib/dados';
+import { carregarOrdemNacional } from '../../lib/ordemPartidos';
+import { inteiro, pct } from '../../lib/formato';
+
+carregarOrdemNacional();
+const meta = lerMetaObrigatoria();
+const br = lerComparacao('br', 'presidente');
+const exterior = lerComparacao('zz', 'presidente');
+const ranking = lerRanking();
+const lider26 = exterior.r2026?.candidatos[0];
+---
+<Layout
+  titulo="Presidente 2026"
+  descricao="Resultado do 1º turno para presidente em 2026, comparado com 2022 por partido, e os 50 municípios onde o voto mais mudou."
+>
+  <div class="pagina wrap">
+    <h1>Presidente, 1º turno de 2026</h1>
+    <p class="lede">Resultado nacional e comparação com o 1º turno de 2022, por partido.</p>
+
+    <ResultadoPrimeiroTurno resultado={br.r2026} apuracaoCompleta={br.apuracao_completa} legenda="Resultado nacional do 1º turno para presidente em 2026" />
+
+    <h2>O que mudou desde 2022</h2>
+    <BarrasVariacao linhas={br.partidos} />
+    <TabelaComparativa linhas={br.partidos} legenda="Porcentagem dos votos válidos por partido para presidente, 2022 e 2026, no Brasil" />
+    {br.volatilidade !== null && <p>Volatilidade de Pedersen nacional: <b>{br.volatilidade.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</b> (de 0 a 100).</p>}
+
+    <h2>Exterior</h2>
+    <p>Os votos das 186 cidades do exterior entram no total nacional e aparecem aqui agregados, sem páginas por cidade.</p>
+    <div class="tabela-rolagem">
+      <table class="tabela">
+        <caption class="sr">Exterior agregado: presidente em 2022 e 2026</caption>
+        <thead><tr><th scope="col">Região</th><th scope="col">Eleitores aptos 2026</th><th scope="col">Mais votado 2022</th><th scope="col">Mais votado 2026</th><th scope="col">% do mais votado em 2026</th><th scope="col">Volatilidade</th></tr></thead>
+        <tbody>
+          <tr>
+            <th scope="row">Exterior</th>
+            <td>{exterior.r2026 ? inteiro(exterior.r2026.aptos) : '—'}</td>
+            <td>{exterior.vencedor_2022 ?? '—'}</td>
+            <td>{exterior.vencedor_2026 ?? '—'}</td>
+            <td>{pct(lider26?.pct ?? null)}</td>
+            <td>{exterior.volatilidade === null ? '—' : exterior.volatilidade.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    {!exterior.apuracao_completa && <p class="aviso" role="status">Apuração do exterior incompleta.</p>}
+
+    <RankingMudanca itens={ranking} limite={50} />
+
+    <Fonte fonte={`TSE, dados abertos de 2022 e 2026 (arquivo de 2026 gerado em ${meta.fonte_2026_dg_hg})`} atualizadoEm={meta.gerado_em} />
+  </div>
+</Layout>
+<style>
+  .aviso { border: 2px solid var(--aviso); color: var(--aviso); border-radius: var(--r-m); padding: 0.7rem 1rem; font-weight: 700; max-width: 65ch; }
+</style>

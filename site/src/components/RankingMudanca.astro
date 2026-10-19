@@ -1,0 +1,124 @@
+---
+import { FAIXAS, filtrarRanking } from '../lib/ranking';
+import { UFS } from '../lib/dados';
+import { inteiro } from '../lib/formato';
+import type { ItemRanking } from '../lib/tipos';
+
+interface Props { itens: ItemRanking[]; limite?: number }
+const { itens, limite = 50 } = Astro.props;
+const topo = filtrarRanking(itens, { uf: '', faixa: '' }, limite);
+const url = (i: ItemRanking) => `/eleicoes-2026/municipio/${i.uf.toLowerCase()}/${i.slug}/`;
+---
+<section class="ranking" data-limite={limite} data-fonte="/dados/ranking-presidente.json">
+  <h2 id="ranking">Os {limite} municípios que mais mudaram</h2>
+  <p>A volatilidade de Pedersen resume, de 0 a 100, quanto o voto de uma cidade para presidente mudou entre 2022 e 2026 (<a href="/metodologia">como é calculada</a>).</p>
+  <div class="filtros" hidden>
+    <label>Estado
+      <select id="filtro-uf">
+        <option value="">Todos</option>
+        {UFS.map((u) => <option value={u}>{u}</option>)}
+      </select>
+    </label>
+    <label>Porte (eleitores aptos)
+      <select id="filtro-porte">
+        <option value="">Todos</option>
+        {FAIXAS.map((f) => <option value={f.id}>{f.rotulo}</option>)}
+      </select>
+    </label>
+  </div>
+  <p class="nota" id="ranking-status" role="status" aria-live="polite"></p>
+  <div class="tabela-rolagem">
+    <table class="tabela rk">
+      <caption class="sr">Municípios com maior mudança de voto para presidente entre 2022 e 2026</caption>
+      <thead>
+        <tr><th scope="col">#</th><th scope="col">Município</th><th scope="col" class="num">Eleitores aptos</th><th scope="col" class="num">Volatilidade</th><th scope="col">Mais votado 2022 → 2026</th></tr>
+      </thead>
+      <tbody id="ranking-corpo">
+        {topo.map((i, n) => (
+          <tr>
+            <td>{n + 1}</td>
+            <th scope="row"><a href={url(i)}>{i.nome}</a> <span class="uf">{i.uf}</span></th>
+            <td class="num">{inteiro(i.aptos)}</td>
+            <td class="num">{i.volatilidade.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+            <td>{i.vencedor_2022 ?? '—'} → {i.vencedor_2026 ?? '—'}{i.virou ? ' (mudou)' : ''}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</section>
+<script>
+  import { filtrarRanking, type Faixa } from '../lib/ranking';
+  import type { ItemRanking } from '../lib/tipos';
+
+  const raiz = document.querySelector<HTMLElement>('section.ranking');
+  if (raiz) {
+    const limite = Number(raiz.dataset.limite) || 50;
+    const filtros = raiz.querySelector<HTMLElement>('.filtros')!;
+    const selUf = raiz.querySelector<HTMLSelectElement>('#filtro-uf')!;
+    const selPorte = raiz.querySelector<HTMLSelectElement>('#filtro-porte')!;
+    const corpo = raiz.querySelector<HTMLElement>('#ranking-corpo')!;
+    const status = raiz.querySelector<HTMLElement>('#ranking-status')!;
+    const numero = new Intl.NumberFormat('pt-BR');
+    const decimal = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    let todos: ItemRanking[] | null = null;
+
+    const celula = (texto: string, classe?: string) => {
+      const c = document.createElement('td');
+      c.textContent = texto;
+      if (classe) c.className = classe;
+      return c;
+    };
+
+    const desenhar = () => {
+      if (!todos) return;
+      const lista = filtrarRanking(todos, { uf: selUf.value, faixa: selPorte.value as Faixa | '' }, limite);
+      corpo.replaceChildren(
+        ...lista.map((i, n) => {
+          const tr = document.createElement('tr');
+          const nome = document.createElement('th');
+          nome.scope = 'row';
+          const a = document.createElement('a');
+          a.href = `/eleicoes-2026/municipio/${i.uf.toLowerCase()}/${i.slug}/`;
+          a.textContent = i.nome;
+          const uf = document.createElement('span');
+          uf.className = 'uf';
+          uf.textContent = i.uf;
+          nome.append(a, ' ', uf);
+          tr.append(
+            celula(String(n + 1)),
+            nome,
+            celula(numero.format(i.aptos), 'num'),
+            celula(decimal.format(i.volatilidade), 'num'),
+            celula(`${i.vencedor_2022 ?? '—'} → ${i.vencedor_2026 ?? '—'}${i.virou ? ' (mudou)' : ''}`),
+          );
+          return tr;
+        }),
+      );
+      status.textContent = lista.length === 0 ? 'Nenhum município com esses filtros.' : `Mostrando ${lista.length} município(s).`;
+    };
+
+    const iniciar = async () => {
+      try {
+        const resp = await fetch(raiz.dataset.fonte!);
+        if (!resp.ok) throw new Error(String(resp.status));
+        todos = (await resp.json()) as ItemRanking[];
+        filtros.hidden = false;
+        selUf.addEventListener('change', desenhar);
+        selPorte.addEventListener('change', desenhar);
+      } catch {
+        status.textContent = 'Não foi possível carregar os filtros; a lista mostra os 50 do país.';
+      }
+    };
+    void iniciar();
+  }
+</script>
+<style>
+  .ranking h2 { scroll-margin-top: 1rem; }
+  .filtros { display: flex; flex-wrap: wrap; gap: 0.75rem 1.25rem; margin: 1rem 0 0.5rem; }
+  .filtros[hidden] { display: none; }
+  .filtros label { display: grid; gap: 0.25rem; font-size: var(--t-xs); font-weight: 700; }
+  select { font: inherit; font-size: var(--t-s); min-height: 44px; padding: 0 0.6rem; background: var(--cartao); color: var(--tinta); border: 1.5px solid var(--linha-forte); border-radius: var(--r-s); }
+  .rk .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .uf { color: var(--tinta-2); font-size: 0.72rem; font-weight: 400; }
+</style>

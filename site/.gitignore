@@ -22,3 +22,5 @@ pnpm-debug.log*
 
 # jetbrains setting folder
 .idea/
+# copiado de dados/ no prebuild (scripts/copiar-ranking.mjs)
+public/dados/

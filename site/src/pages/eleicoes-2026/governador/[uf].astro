@@ -1,0 +1,39 @@
+---
+import Layout from '../../../components/Layout.astro';
+import Fonte from '../../../components/Fonte.astro';
+import ResultadoPrimeiroTurno from '../../../components/ResultadoPrimeiroTurno.astro';
+import TabelaComparativa from '../../../components/TabelaComparativa.astro';
+import BarrasVariacao from '../../../components/BarrasVariacao.astro';
+import { UFS, lerComparacao, lerMetaObrigatoria } from '../../../lib/dados';
+import { carregarOrdemNacional } from '../../../lib/ordemPartidos';
+import { nomeUF } from '../../../lib/formato';
+
+export function getStaticPaths() {
+  return UFS.map((uf) => ({ params: { uf: uf.toLowerCase() } }));
+}
+
+carregarOrdemNacional();
+const { uf } = Astro.params;
+const meta = lerMetaObrigatoria();
+const c = lerComparacao(uf!, 'governador');
+const nome = nomeUF(c.nome ?? uf!.toUpperCase());
+---
+<Layout
+  titulo={`Governador de ${nome} 2026`}
+  descricao={`Resultado do 1º turno para governador em ${nome} em 2026, comparado com 2022 por partido.`}
+>
+  <div class="pagina wrap">
+    <p class="nota"><a href="/eleicoes-2026">Eleições 2026</a></p>
+    <h1>Governador de {nome}</h1>
+    <p class="lede">1º turno de 2026, comparado com o 1º turno de 2022, por partido.</p>
+
+    <ResultadoPrimeiroTurno resultado={c.r2026} apuracaoCompleta={c.apuracao_completa} legenda={`Resultado do 1º turno para governador em ${nome}, 2026`} />
+
+    <h2>O que mudou desde 2022</h2>
+    <BarrasVariacao linhas={c.partidos} />
+    <TabelaComparativa linhas={c.partidos} legenda={`Porcentagem dos votos válidos por partido para governador em ${nome}, 2022 e 2026`} />
+    {c.volatilidade !== null && <p>Volatilidade de Pedersen no estado: <b>{c.volatilidade.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</b> (de 0 a 100).</p>}
+
+    <Fonte fonte={`TSE, dados abertos de 2022 e 2026 (arquivo de 2026 gerado em ${meta.fonte_2026_dg_hg})`} atualizadoEm={meta.gerado_em} />
+  </div>
+</Layout>
