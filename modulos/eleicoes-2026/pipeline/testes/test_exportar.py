@@ -96,6 +96,24 @@ def test_ranking_ordenado_sem_exterior_com_aptos(tmp_path):
     assert rk[0]["volatilidade"] > rk[1]["volatilidade"]
 
 
+def test_anulados_exportados_sem_pct():
+    from dataclasses import replace
+
+    from qma_eleicoes.comparacao import comparar
+    from qma_eleicoes.exportar import serializar
+
+    r = replace(
+        _res(2026, "governador", "SE", None, 600, 400),
+        anulados=(VotoCandidato(50, "C", "PSOL", 37, ""),),
+    )
+    d = serializar(comparar(None, r, {}))["r2026"]
+    assert list(d["anulados"]) == [
+        {"numero": 50, "nome_urna": "C", "partido": "PSOL", "votos": 37, "situacao": ""}
+    ]
+    assert [c["pct"] for c in d["candidatos"]] == [60.0, 40.0]
+    assert d["votos_anulados"] == 37
+
+
 def test_meta():
     br = _dados()[1][0]
     m = meta_de({"dg": "04/10/2026", "hg": "22:30:15"}, br, datetime(2026, 10, 5, 3, 0, tzinfo=timezone.utc))

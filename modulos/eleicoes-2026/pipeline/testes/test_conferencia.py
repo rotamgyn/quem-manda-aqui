@@ -61,17 +61,21 @@ def test_divergencia_de_um_voto_bloqueia():
     assert e.value.divergencias == [
         "2026 presidente GO candidato 22: municípios=400 oficial=401",
         "2026 presidente BR candidato 22: UFs=408 oficial=407",
+        "2026 presidente GO: soma dos candidatos válidos=651 votos válidos=650",
     ]
 
 
-def test_voto_municipal_errado_gera_uma_unica_linha():
+def test_voto_municipal_errado_gera_linha_da_uf_e_do_municipio():
     rs = _cenario()
     i = next(k for k, r in enumerate(rs) if r.municipio_tse == "1")
     m = rs[i]
     rs[i] = replace(m, candidatos=(replace(m.candidatos[0], votos=m.candidatos[0].votos + 1), m.candidatos[1]))
     with pytest.raises(ErroConferencia) as e:
         conferir(rs)
-    assert e.value.divergencias == ["2026 presidente GO candidato 22: municípios=401 oficial=400"]
+    assert e.value.divergencias == [
+        "2026 presidente GO candidato 22: municípios=401 oficial=400",
+        "2026 presidente GO município 1: soma dos candidatos válidos=501 votos válidos=500",
+    ]
 
 
 def test_rotulo_segundo_turno():
@@ -88,8 +92,9 @@ def test_mensagem_lista_todas_as_divergencias():
     uf = replace(uf, validos=uf.validos + 1_000, nulos=uf.nulos - 3)
     with pytest.raises(ErroConferencia) as e:
         conferir(go + [uf])
-    assert len(e.value.divergencias) == 2
+    assert len(e.value.divergencias) == 3
     linhas = str(e.value).splitlines()
+    assert "2026 governador GO: soma dos candidatos válidos=650 votos válidos=1.650" in linhas
     assert "2026 governador GO validos: municípios=650 oficial=1.650" in linhas
     assert "2026 governador GO nulos: municípios=10 oficial=7" in linhas
 
@@ -128,3 +133,15 @@ def test_uf_sem_agregado_ou_sem_municipios_nao_e_ignorada():
 def test_governador_nao_exige_brasil():
     go = [_res("GO", "1", 300, 200, cargo="governador")]
     conferir(go + [_soma("GO", go)])
+
+
+def test_anulados_fora_da_soma_dos_validos_e_conferidos_por_candidato():
+    anul = (VotoCandidato(50, "C", "PSOL", 30, ""),)
+    go = [replace(_res("GO", "1", 300, 200, cargo="governador"), anulados=anul)]
+    uf = replace(_soma("GO", go), anulados=anul)
+    conferir(go + [uf])  # 30 votos anulados não entram em validos e batem entre níveis
+
+    uf_errada = replace(uf, anulados=(replace(anul[0], votos=31),))
+    with pytest.raises(ErroConferencia) as e:
+        conferir(go + [uf_errada])
+    assert e.value.divergencias == ["2026 governador GO candidato 50: municípios=30 oficial=31"]

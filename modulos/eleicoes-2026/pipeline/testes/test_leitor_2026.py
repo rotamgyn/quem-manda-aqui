@@ -120,3 +120,34 @@ def test_situacao_por_st(dados_gov, e, st, esperado):
     r = ler_resultado_2026(d, "governador")
     alvo = next(c for c in r.candidatos if c.numero == int(cand["n"]))
     assert alvo.situacao == esperado
+
+
+def test_anulados_sub_judice_fora_dos_validos():
+    """SE 2026: Dr. Helton (PSOL) teve 37.081 votos anulados sub judice."""
+    r = ler_resultado_2026(_carregar("se-c0003-e006259-u.json"), "governador")
+    assert r.validos == 1189927
+    assert all(c.partido != "PSOL" for c in r.candidatos)
+    assert sum(c.votos for c in r.candidatos) == r.validos
+    assert [(a.partido, a.votos) for a in r.anulados] == [("PSOL", 37081)]
+    assert sum(r.pct(c) for c in r.candidatos) == pytest.approx(100)
+    assert r.pct(r.candidatos[0]) == pytest.approx(727291 / 1189927 * 100)
+
+
+@pytest.mark.parametrize("dvt", ["Anulado", "Anulado sub judice", "Cassado"])
+def test_qualquer_dvt_diferente_de_valido_e_anulado(dados_gov, dvt):
+    d = copy.deepcopy(dados_gov)
+    cand = d["carg"][0]["agr"][0]["par"][0]["cand"][0]
+    cand["dvt"] = dvt
+    r = ler_resultado_2026(d, "governador")
+    assert int(cand["n"]) in {a.numero for a in r.anulados}
+    assert int(cand["n"]) not in {c.numero for c in r.candidatos}
+
+
+def test_dvt_ausente_conta_como_valido(dados_gov):
+    d = copy.deepcopy(dados_gov)
+    for agr in d["carg"][0]["agr"]:
+        for p in agr["par"]:
+            for c in p["cand"]:
+                c.pop("dvt", None)
+    r = ler_resultado_2026(d, "governador")
+    assert r.anulados == ()

@@ -28,6 +28,8 @@ def _resultado(r: Resultado | None) -> dict | None:
     d = asdict(r)
     for dc, c in zip(d["candidatos"], r.candidatos):
         dc["pct"] = _arred(r.pct(c))
+    # Anulados (inclusive sub judice) ficam fora dos percentuais: sem `pct`.
+    d["votos_anulados"] = sum(c.votos for c in r.anulados)
     d["pct_secoes_totalizadas"] = _arred(r.pct_secoes_totalizadas)
     return d
 

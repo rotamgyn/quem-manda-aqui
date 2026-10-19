@@ -37,12 +37,24 @@ def _comparar(rotulo: str, filhos: list[Resultado], oficial: Resultado, nome_som
 
     somas: dict[int, int] = defaultdict(int)
     for f in filhos:
-        for c in f.candidatos:
+        for c in (*f.candidatos, *f.anulados):
             somas[c.numero] += c.votos
-    refs = {c.numero: c.votos for c in oficial.candidatos}
+    refs = {c.numero: c.votos for c in (*oficial.candidatos, *oficial.anulados)}
     for numero in sorted(somas.keys() | refs.keys()):
         diff(f"candidato {numero}", somas.get(numero, 0), refs.get(numero, 0))
     return saida
+
+
+def _soma_validos(r: Resultado) -> str | None:
+    """Votos dos candidatos válidos (sem anulados) devem somar exatamente `validos`."""
+    soma = sum(c.votos for c in r.candidatos)
+    if soma == r.validos:
+        return None
+    local = "" if r.municipio_tse is None else f" município {r.municipio_tse}"
+    return (
+        f"{_rotulo(r.ano, r.turno, r.cargo, r.uf)}{local}: "
+        f"soma dos candidatos válidos={_n(soma)} votos válidos={_n(r.validos)}"
+    )
 
 
 def conferir(resultados: list[Resultado]) -> None:
@@ -54,6 +66,8 @@ def conferir(resultados: list[Resultado]) -> None:
        o que verifica que os próprios arquivos do TSE são coerentes entre si.
     Um erro num município gera exatamente uma linha (UF). Um agregado de UF corrompido
     gera legitimamente duas (a da UF e a do BR).
+    3. em todo resultado, a soma dos votos dos candidatos válidos (sem anulados, inclusive
+       sub judice) é igual a `validos` — base de todos os percentuais.
     """
     municipios: dict[tuple, list[Resultado]] = defaultdict(list)
     ufs: dict[tuple, list[Resultado]] = defaultdict(list)
@@ -92,6 +106,8 @@ def conferir(resultados: list[Resultado]) -> None:
         else:
             for of in oficial:
                 divergencias += _comparar(rotulo, filhos, of, "UFs")
+
+    divergencias += [d for r in resultados if (d := _soma_validos(r)) is not None]
 
     if divergencias:
         raise ErroConferencia(divergencias)

@@ -32,7 +32,9 @@ class Resultado:
     nulos: int
     validos: int
     pct_secoes_totalizadas: float
-    candidatos: tuple[VotoCandidato, ...]  # ordenados por votos, do maior ao menor
+    candidatos: tuple[VotoCandidato, ...]  # válidos, ordenados por votos, do maior ao menor
+    # Candidatos com votos anulados (inclusive sub judice): fora de `validos` e dos percentuais.
+    anulados: tuple[VotoCandidato, ...] = ()
 
     def pct(self, candidato: VotoCandidato) -> float | None:
         """Percentual do candidato sobre os votos válidos; None sem votos válidos."""
