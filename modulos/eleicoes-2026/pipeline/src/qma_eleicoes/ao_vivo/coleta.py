@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
@@ -40,7 +41,9 @@ class Coletor:
         *,
         _baixar: Callable = baixar_json,
         max_por_ciclo: int = 200,
+        _relogio: Callable[[], float] = time.monotonic,
     ):
+        self._relogio = _relogio
         self._baixar = _baixar
         self.max_por_ciclo = max_por_ciclo
         self.ufs_governador = [u.upper() for u in ufs_governador]
@@ -72,20 +75,16 @@ class Coletor:
             *(("governador", uf, None) for uf in self.ufs_governador),
         ]
 
-    def _selecionar_municipais(self) -> list[Chave]:
-        """Fila circular: a partir do cursor, só os que ainda não estão em 100%."""
+    def _selecionar_municipais(self) -> list[int]:
+        """Fila circular: índices a partir do cursor, só dos que ainda não estão em 100%."""
         n = len(self._fila)
-        escolhidos: list[Chave] = []
-        ultimo = None
+        escolhidos: list[int] = []
         for passo in range(n):
             if len(escolhidos) >= self.max_por_ciclo:
                 break
             i = (self._cursor + passo) % n
             if not self._completo(self._fila[i]):
-                escolhidos.append(self._fila[i])
-                ultimo = i
-        if ultimo is not None:
-            self._cursor = (ultimo + 1) % n
+                escolhidos.append(i)
         return escolhidos
 
     def _processar(self, chave: Chave, rel: RelatorioCiclo) -> None:
@@ -119,11 +118,22 @@ class Coletor:
             rel.erros.append(f"{url}: {e}")
             log.warning("falha em %s: %s", url, e)
 
-    def ciclo(self) -> RelatorioCiclo:
+    def ciclo(self, prazo: float | None = None) -> RelatorioCiclo:
+        """Um ciclo. `prazo` (instante do relógio monotônico) interrompe só a varredura
+        municipal; andamento, BR e UFs rodam sempre. Os municípios não visitados ficam
+        no início da fila do próximo ciclo."""
         rel = RelatorioCiclo()
         self._processar_andamento(rel)
         for chave in self._arquivos_fixos():
             self._processar(chave, rel)
-        for chave in self._selecionar_municipais():
-            self._processar(chave, rel)
+        escolhidos = self._selecionar_municipais()
+        for pos, i in enumerate(escolhidos):
+            if prazo is not None and self._relogio() >= prazo:
+                self._cursor = i
+                log.info("prazo do ciclo esgotado: %d municipais pendentes", len(escolhidos) - pos)
+                break
+            self._processar(self._fila[i], rel)
+        else:
+            if escolhidos:
+                self._cursor = (escolhidos[-1] + 1) % len(self._fila)
         return rel

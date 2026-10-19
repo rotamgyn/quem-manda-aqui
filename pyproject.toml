@@ -8,6 +8,7 @@ dependencies = [
     "httpx",
     "truststore>=0.10.4",
     "tzdata",
+    "boto3>=1.43.114",
 ]
 
 [dependency-groups]

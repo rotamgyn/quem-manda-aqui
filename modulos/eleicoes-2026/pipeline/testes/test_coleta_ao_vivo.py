@@ -164,3 +164,47 @@ def test_ufs_governador_le_do_config():
     config = {"abr": [{"cd": "rn", "mu": [{"cd": "1"}]}, {"cd": "ac", "mu": [{"cd": "2"}]}, {"cd": "sp", "mu": []}]}
     assert ufs_governador_de(config) == ["AC", "RN"]
     assert ELEICAO_2026_T2 == {"presidente": "6258", "governador": "6260"}
+
+
+class Relogio:
+    """Relógio falso: cada leitura avança `passo` segundos."""
+
+    def __init__(self, passo=1.0):
+        self.t = 0.0
+        self.passo = passo
+
+    def __call__(self):
+        self.t += self.passo
+        return self.t
+
+
+def test_prazo_interrompe_a_varredura_municipal():
+    srv = Servidor()
+    c = _coletor(srv, ufs=(), _relogio=Relogio())
+    # leituras do relógio: 1, 2, 3... ; prazo 2.5 → só o 1º e o 2º municipal passam
+    c.ciclo(prazo=2.5)
+    assert len(srv.municipais()) == 2
+    # os fixos (andamento, BR e UFs) rodaram todos
+    assert url_andamento_2026("6258") in srv.chamadas
+    for uf in ("br", "go", "df", "zz"):
+        assert url_resultado_2026("presidente", uf, None, "6258") in srv.chamadas
+
+
+def test_prazo_ja_vencido_roda_so_os_fixos_e_retoma_do_ponto_certo():
+    srv = Servidor()
+    c = _coletor(srv, ufs=(), _relogio=Relogio())
+    c.ciclo(prazo=0.0)
+    assert srv.municipais() == []
+    srv.chamadas.clear()
+    c.ciclo()  # sem prazo: a fila recomeça do primeiro, nada foi pulado
+    assert [_escopo(u) for u in srv.municipais()] == ["df11118", "go93734", "zz99999"]
+
+
+def test_prazo_parcial_nao_pula_municipios_na_fila():
+    srv = Servidor()
+    c = _coletor(srv, ufs=(), _relogio=Relogio())
+    c.ciclo(prazo=1.5)  # só o 1º (DF) passa
+    assert [_escopo(u) for u in srv.municipais()] == ["df11118"]
+    srv.chamadas.clear()
+    c.ciclo()
+    assert [_escopo(u) for u in srv.municipais()][0] == "go93734"
