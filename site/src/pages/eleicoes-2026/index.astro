@@ -56,7 +56,7 @@ const estados = UFS.map((uf) => ({ uf, nome: nomeEstado(uf) }));
     <p>Em quais cidades o voto para presidente mais se alterou entre 2022 e 2026, com filtros por estado e porte.</p>
     <p><a class="botao" href="/eleicoes-2026/presidente#ranking">Ver o ranking dos 50 municípios</a></p>
 
-    <h2>Governador, por estado</h2>
+    <h2 id="governadores">Governador, por estado</h2>
     <ul class="estados">
       {estados.map((e) => <li><a href={`/eleicoes-2026/governador/${e.uf.toLowerCase()}/`}>{e.nome}</a></li>)}
     </ul>

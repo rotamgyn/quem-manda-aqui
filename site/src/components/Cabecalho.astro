@@ -3,11 +3,17 @@ import Logo from './Logo.astro';
 import BuscaMunicipio from './BuscaMunicipio.astro';
 const itens = [
   { href: '/', rotulo: 'Início' },
+  { href: '/eleicoes-2026/', rotulo: 'Eleições 2026' },
+  { href: '/eleicoes-2026/presidente/', rotulo: 'Presidente' },
+  { href: '/eleicoes-2026/#governadores', rotulo: 'Governadores', prefixo: '/eleicoes-2026/governador' },
   { href: '/metodologia', rotulo: 'Metodologia' },
   { href: '/fontes', rotulo: 'Fontes' },
   { href: '/sobre', rotulo: 'Sobre' },
 ];
-const atual = Astro.url.pathname.replace(/\/$/, '') || '/';
+const semBarra = (p: string) => p.replace(/[#?].*$/, '').replace(/\/$/, '') || '/';
+const atual = semBarra(Astro.url.pathname);
+const ehAtual = (i: { href: string; prefixo?: string }) =>
+  i.prefixo ? atual.startsWith(i.prefixo) : !i.href.includes('#') && atual === semBarra(i.href);
 const mostrarBusca = atual !== '/'; // na página inicial a busca já é o destaque
 ---
 <header class="cab">
@@ -15,7 +21,7 @@ const mostrarBusca = atual !== '/'; // na página inicial a busca já é o desta
     <a class="cab-logo" href="/" aria-label="Quem Manda Aqui, página inicial"><Logo /></a>
     <button class="menu-btn" type="button" aria-expanded="false" aria-controls="menu-principal">Menu</button>
     <nav id="menu-principal" class="menu" aria-label="Principal">
-      {itens.map((i) => <a href={i.href} aria-current={atual === i.href ? 'page' : undefined}>{i.rotulo}</a>)}
+      {itens.map((i) => <a href={i.href} aria-current={ehAtual(i) ? 'page' : undefined}>{i.rotulo}</a>)}
     </nav>
     <button class="tema" id="alternar-tema" type="button" aria-pressed="false">Modo escuro</button>
     {mostrarBusca && <div class="cab-busca"><BuscaMunicipio id="busca-cabecalho" compacta /></div>}
