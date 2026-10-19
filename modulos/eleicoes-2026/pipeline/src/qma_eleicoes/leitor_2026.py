@@ -11,13 +11,14 @@ def _num(texto: str) -> float:
 
 
 def _situacao(cand: dict) -> Situacao:
-    if cand.get("e") == "s":
-        return "eleito"
-    st = (cand.get("st") or "").casefold()
+    # `e == "s"` significa "classificado" (eleito OU 2º turno); só `st` distingue.
+    st = (cand.get("st") or "").casefold().strip()
     if "2º turno" in st:
         return "2º turno"
     if "não eleito" in st:
         return "não eleito"
+    if st.startswith("eleito"):
+        return "eleito"
     return ""
 
 

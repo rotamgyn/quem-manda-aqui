@@ -101,3 +101,22 @@ def test_url_resultado_2026():
     assert url_resultado_2026("presidente", "br").endswith(
         "/6257/dados/br/br-c0001-e006257-u.json"
     )
+
+
+@pytest.mark.parametrize(
+    "e,st,esperado",
+    [
+        ("s", "2º turno", "2º turno"),
+        ("s", "Eleito", "eleito"),
+        ("n", "Não eleito", "não eleito"),
+        ("s", "", ""),
+        ("n", "", ""),
+    ],
+)
+def test_situacao_por_st(dados_gov, e, st, esperado):
+    d = copy.deepcopy(dados_gov)
+    cand = d["carg"][0]["agr"][0]["par"][0]["cand"][0]
+    cand["e"], cand["st"] = e, st
+    r = ler_resultado_2026(d, "governador")
+    alvo = next(c for c in r.candidatos if c.numero == int(cand["n"]))
+    assert alvo.situacao == esperado
