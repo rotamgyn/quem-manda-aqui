@@ -1,5 +1,6 @@
 ---
 import Logo from './Logo.astro';
+import BuscaMunicipio from './BuscaMunicipio.astro';
 const itens = [
   { href: '/', rotulo: 'Início' },
   { href: '/metodologia', rotulo: 'Metodologia' },
@@ -7,6 +8,7 @@ const itens = [
   { href: '/sobre', rotulo: 'Sobre' },
 ];
 const atual = Astro.url.pathname.replace(/\/$/, '') || '/';
+const mostrarBusca = atual !== '/'; // na página inicial a busca já é o destaque
 ---
 <header class="cab">
   <div class="wrap cab-in">
@@ -16,12 +18,14 @@ const atual = Astro.url.pathname.replace(/\/$/, '') || '/';
       {itens.map((i) => <a href={i.href} aria-current={atual === i.href ? 'page' : undefined}>{i.rotulo}</a>)}
     </nav>
     <button class="tema" id="alternar-tema" type="button" aria-pressed="false">Modo escuro</button>
+    {mostrarBusca && <div class="cab-busca"><BuscaMunicipio id="busca-cabecalho" compacta /></div>}
   </div>
 </header>
 <style>
   .cab { background: var(--cartao); border-bottom: 1px solid var(--linha); }
   .cab-in { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 1.25rem; min-height: 60px; padding-top: 0.4rem; padding-bottom: 0.4rem; }
   .cab-logo { text-decoration: none; font-size: 1.15rem; margin-right: auto; }
+  .cab-busca { flex-basis: 100%; order: 6; padding-bottom: 0.5rem; }
   .menu { display: none; flex-basis: 100%; order: 5; flex-direction: column; gap: 0.25rem; font-size: var(--t-s); font-weight: 700; padding-bottom: 0.5rem; }
   .menu.aberto { display: flex; }
   .menu a { text-decoration: none; min-height: 44px; display: inline-flex; align-items: center; }
@@ -32,6 +36,7 @@ const atual = Astro.url.pathname.replace(/\/$/, '') || '/';
   @media (min-width: 760px) {
     .menu { display: flex; flex-basis: auto; flex-direction: row; order: 0; gap: 1.25rem; padding: 0; font-size: var(--t-xs); }
     .menu-btn { display: none; }
+    .cab-busca { flex-basis: 240px; order: 0; padding: 0; }
   }
 </style>
 <script>

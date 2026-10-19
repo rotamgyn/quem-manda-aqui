@@ -27,6 +27,9 @@ export function lerOrdemNacional(pasta: string = pastaDados()): string[] {
 }
 
 /** Carrega a ordem real em `cores.ts`. Chamar no frontmatter das páginas que usam cores. */
+let carregada = false;
 export function carregarOrdemNacional(): void {
+  if (carregada) return; // 5.571 páginas de município chamam isto: lê os arquivos uma vez só
   definirOrdem(lerOrdemNacional());
+  carregada = true;
 }

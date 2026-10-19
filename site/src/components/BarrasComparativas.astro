@@ -1,6 +1,7 @@
 ---
 import { corDoPartido } from '../lib/cores';
 import { pct, pp } from '../lib/formato';
+import { normalizar } from '../lib/busca';
 import type { LinhaPartido } from '../lib/tipos';
 import TabelaComparativa from './TabelaComparativa.astro';
 
@@ -23,15 +24,19 @@ const escala = Math.ceil(topo / 10) * 10; // eixo comum, de 0 a `escala`
 const largura = (v: number) => `${(v / escala) * 100}%`;
 const eixo = [0, 1, 2, 3].map((i) => Math.round(((escala * i) / 3) * 10) / 10);
 const rotulo = (v: number) => `${v.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`;
+const idTabela = `tab-${normalizar(titulo).replace(/ /g, '-')}`; // título único na página
 const diferenca = (l: LinhaPartido) =>
   l.pct_2022 === null ? 'novo em 2026' : l.pct_2026 === null ? 'não disputou em 2026' : pp(l.delta_pp);
 const resumo = itens
   .map(
     (l) =>
-      `${l.partido} ${l.pct_2026 === null ? 'não disputou em 2026' : `${pct(l.pct_2026)} em 2026`} e ${l.pct_2022 === null ? 'não disputou em 2022' : `${pct(l.pct_2022)} em 2022`}`,
+      `${l.partido} ${l.pct_2026 === null ? 'não disputou em 2026' : `${pct(l.pct_2026)} em 2026`} e ${l.pct_2022 === null ? 'não disputou em 2022' : `${pct(l.pct_2022)} em 2022`}${l.delta_pp === null ? '' : `, variação de ${pp(l.delta_pp)}`}`,
   )
   .join('; ');
 ---
+{linhas.length === 0 ? (
+  <p class="comp-vazio">Sem dados de partidos para montar este gráfico.</p>
+) : (
 <div class="comp-graf">
   <div class="graf-cab">
     <div>
@@ -62,12 +67,13 @@ const resumo = itens
   </div>
   <div class="eixo" aria-hidden="true"><div>{eixo.map((v, i) => <span style={`left:${(i / 3) * 100}%`}>{rotulo(v)}</span>)}</div><div></div></div>
   <div class="acoes">
-    <button type="button" class="ver-tabela" aria-expanded="true" hidden>Ver como tabela</button>
+    <button type="button" class="ver-tabela" aria-expanded="true" aria-controls={idTabela} hidden>Ver como tabela</button>
   </div>
-  <div class="tabela-alt">
+  <div class="tabela-alt" id={idTabela}>
     <TabelaComparativa linhas={linhas} legenda={legenda} />
   </div>
 </div>
+)}
 <script>
   // Com JavaScript, a tabela fica atrás do botão; sem JavaScript, fica sempre visível.
   document.querySelectorAll<HTMLElement>('.comp-graf').forEach((raiz) => {
@@ -85,6 +91,7 @@ const resumo = itens
   });
 </script>
 <style>
+  .comp-vazio { color: var(--tinta-2); font-style: italic; }
   .comp-graf { margin: 1rem 0; max-width: 720px; }
   .graf-cab { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem 1rem; align-items: end; margin-bottom: 0.9rem; }
   .graf-cab h3 { margin: 0; font-size: var(--t-s); }

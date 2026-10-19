@@ -1,0 +1,143 @@
+---
+import Layout from '../../../../components/Layout.astro';
+import Fonte from '../../../../components/Fonte.astro';
+import BarrasComparativas from '../../../../components/BarrasComparativas.astro';
+import ResultadoPrimeiroTurno from '../../../../components/ResultadoPrimeiroTurno.astro';
+import { UFS, lerMetaObrigatoria, lerMunicipiosUF } from '../../../../lib/dados';
+import { carregarOrdemNacional } from '../../../../lib/ordemPartidos';
+import { fraseDestaque } from '../../../../lib/frase';
+import { inteiro, nomeProprio, pct, pctApuracao } from '../../../../lib/formato';
+import { linhasParticipacao, type Medida } from '../../../../lib/participacao';
+import type { Comparacao, MunicipioComparado } from '../../../../lib/tipos';
+
+// Sem mapa nestas páginas (são 5.571): o mapa do estado fica na página do governador.
+export function getStaticPaths() {
+  return UFS.flatMap((uf) =>
+    lerMunicipiosUF(uf).map((m) => ({ params: { uf: uf.toLowerCase(), cidade: m.slug }, props: { m } })),
+  );
+}
+
+carregarOrdemNacional();
+const { m } = Astro.props as { m: MunicipioComparado };
+const uf = Astro.params.uf!.toUpperCase();
+const ufMin = uf.toLowerCase();
+const meta = lerMetaObrigatoria();
+const nome = nomeProprio(m.nome);
+const frase = fraseDestaque(m);
+const pres = m.presidente;
+const gov: Comparacao | undefined = m.governador;
+
+const maisVotado = (c: Comparacao) => {
+  const r = c.r2026;
+  if (!r || r.validos <= 0) return null;
+  return r.candidatos.reduce((a, b) => (b.votos > a.votos ? b : a), r.candidatos[0]!);
+};
+const topoPres = maisVotado(pres);
+const participacao = linhasParticipacao(pres.r2022, pres.r2026);
+const medida = (x: Medida | null) =>
+  x === null ? null : x.pct === null ? inteiro(x.n) : `${inteiro(x.n)} (${pct(x.pct)})`;
+const semResultado2022 = !pres.r2022;
+---
+<Layout titulo={`Quem manda aqui em ${nome}/${uf}?`} descricao={`${frase}. Resultado do 1º turno de 2026 em ${nome}/${uf}, comparado com 2022, por partido.`}>
+  <div class="pagina wrap">
+    <p class="nota crumbs">
+      <a href="/eleicoes-2026">Eleições 2026</a> / <a href={`/eleicoes-2026/municipios/${ufMin}/`}>{uf}</a> / {nome}
+    </p>
+    <h1>Quem manda aqui em {nome}/{uf}?</h1>
+    <p class="resposta">{frase}.</p>
+    {topoPres && (
+      <p class="lede">
+        Para presidente, o mais votado no 1º turno de 2026 foi {topoPres.nome_urna} ({topoPres.partido}), com {pct(topoPres.pct)} dos votos válidos.
+      </p>
+    )}
+
+    <h2>Presidente</h2>
+    {pres.r2026 === null || pres.r2026.validos <= 0 ? (
+      <p>Resultado de 2026 para este município ainda indisponível.</p>
+    ) : (
+      <>
+        {!pres.apuracao_completa && (
+          <p class="aviso" role="status">
+            Apuração incompleta: {pctApuracao(pres.r2026.pct_secoes_totalizadas)} das seções totalizadas. Os números podem mudar até o fim da contagem.
+          </p>
+        )}
+        {semResultado2022 ? (
+          <>
+            <p><strong>Sem dados de 2022</strong> para este município, por isso não há comparação.</p>
+            <ResultadoPrimeiroTurno resultado={pres.r2026} apuracaoCompleta={true} legenda={`Presidente, 1º turno de 2026 em ${nome}/${uf}`} />
+          </>
+        ) : (
+          <BarrasComparativas
+            linhas={pres.partidos}
+            max={6}
+            titulo={`Presidente em ${nome}, 1º turno: 2026 contra 2022`}
+            legenda={`Porcentagem dos votos válidos por partido para presidente em ${nome}/${uf}, 2022 e 2026`}
+          />
+        )}
+      </>
+    )}
+    <p><a href="/eleicoes-2026/presidente/">Ver o resultado do presidente no Brasil</a></p>
+
+    {gov && (
+      <>
+        <h2>Governador</h2>
+        {gov.r2026 === null || gov.r2026.validos <= 0 ? (
+          <p>Resultado de 2026 para governador neste município ainda indisponível.</p>
+        ) : (
+          <>
+            {!gov.apuracao_completa && (
+              <p class="aviso" role="status">
+                Apuração incompleta: {pctApuracao(gov.r2026.pct_secoes_totalizadas)} das seções totalizadas. Os números podem mudar até o fim da contagem.
+              </p>
+            )}
+            {!gov.r2022 ? (
+              <>
+                <p><strong>Sem dados de 2022</strong> para governador neste município, por isso não há comparação.</p>
+                <ResultadoPrimeiroTurno resultado={gov.r2026} apuracaoCompleta={true} legenda={`Governador, 1º turno de 2026 em ${nome}/${uf}`} />
+              </>
+            ) : (
+              <BarrasComparativas
+                linhas={gov.partidos}
+                max={6}
+                titulo={`Governador em ${nome}, 1º turno: 2026 contra 2022`}
+                legenda={`Porcentagem dos votos válidos por partido para governador em ${nome}/${uf}, 2022 e 2026`}
+              />
+            )}
+          </>
+        )}
+        <p><a href={`/eleicoes-2026/governador/${ufMin}/`}>Ver o governador de {uf}, com os mapas município a município</a></p>
+      </>
+    )}
+
+    <h2>Comparecimento, abstenção, brancos e nulos</h2>
+    <div class="tabela-rolagem">
+      <table class="tabela participacao">
+        <caption class="sr">Participação do eleitorado em {nome}/{uf}, 1º turno, 2022 e 2026</caption>
+        <thead><tr><th scope="col">Eleitorado</th><th scope="col" class="num">2022</th><th scope="col" class="num">2026</th></tr></thead>
+        <tbody>
+          {participacao.map((l) => (
+            <tr>
+              <th scope="row">
+                {l.rotulo}
+                {l.base && <small>{l.base === 'aptos' ? '% dos eleitores aptos' : '% do comparecimento'}</small>}
+              </th>
+              <td class="num">{medida(l.a2022) ?? <span class="sem">sem dados de 2022</span>}</td>
+              <td class="num">{medida(l.a2026) ?? <span class="sem">sem dados de 2026</span>}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+
+    <Fonte fonte={`TSE, dados abertos de 2022 e 2026 (arquivo de 2026 gerado em ${meta.fonte_2026_dg_hg})`} atualizadoEm={meta.gerado_em} />
+  </div>
+</Layout>
+<style>
+  .crumbs { margin: 0 0 0.75rem; color: var(--tinta-2); }
+  .resposta { font-size: var(--t-m); line-height: 1.35; margin: 0 0 0.75rem; max-width: 40ch; font-weight: 700; }
+  .aviso { border: 2px solid var(--aviso); color: var(--aviso); border-radius: var(--r-m); padding: 0.7rem 1rem; font-weight: 700; max-width: 65ch; }
+  .participacao .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .participacao th[scope="row"] { font-weight: 700; }
+  .participacao small { display: block; font-weight: 400; color: var(--tinta-2); font-size: var(--t-xs); }
+  .sem { color: var(--tinta-2); font-style: italic; }
+</style>

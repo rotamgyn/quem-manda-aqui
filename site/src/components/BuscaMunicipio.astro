@@ -1,13 +1,142 @@
 ---
-// SLOT DA TAREFA 13: a busca de município (campo, autocomplete e navegação) substitui
-// este componente. Enquanto isso, não há busca falsa: só um aviso.
+// Busca de município: combobox acessível (campo + lista), sem framework.
+// Sem JavaScript, o formulário leva à lista de municípios por estado.
+interface Props { id: string; compacta?: boolean }
+const { id, compacta = false } = Astro.props;
 ---
-<div class="busca-slot" data-slot="busca-municipio">
-  <p class="busca-titulo">Seu município</p>
-  <p class="busca-aviso">A busca por município chega em breve, junto com as páginas de cada cidade.</p>
-</div>
+<form class={`busca-mun${compacta ? ' compacta' : ''}`} action="/eleicoes-2026/municipios/" method="get" role="search" data-busca>
+  <label for={id}>{compacta ? <span class="sr">Buscar seu município</span> : 'Seu município'}</label>
+  <div class="campo">
+    <input
+      id={id} name="q" type="text" inputmode="search" autocomplete="off" autocapitalize="off" spellcheck="false"
+      placeholder={compacta ? 'Buscar município' : 'Ex.: Anápolis, Caruaru, Chapecó'}
+      role="combobox" aria-expanded="false" aria-controls={`${id}-lista`} aria-autocomplete="list" aria-haspopup="listbox"
+    />
+    <button type="submit">Buscar</button>
+  </div>
+  <ul id={`${id}-lista`} class="lista" role="listbox" aria-label="Municípios encontrados" hidden></ul>
+  <p class="sr" role="status" aria-live="polite" data-estado></p>
+  {!compacta && <noscript><p class="nota">Sem JavaScript, o botão leva à lista de municípios por estado.</p></noscript>}
+</form>
+<script>
+  import { buscar, type ItemBusca } from '../lib/busca';
+
+  let indice: Promise<ItemBusca[]> | null = null;
+  const carregar = () => (indice ??= fetch('/busca-municipios.json').then((r) => {
+    if (!r.ok) throw new Error(String(r.status));
+    return r.json() as Promise<ItemBusca[]>;
+  }).catch((e) => { indice = null; throw e; }));
+
+  document.querySelectorAll<HTMLFormElement>('form[data-busca]').forEach((form) => {
+    const entrada = form.querySelector<HTMLInputElement>('input')!;
+    const lista = form.querySelector<HTMLUListElement>('ul')!;
+    const estado = form.querySelector<HTMLElement>('[data-estado]')!;
+    let itens: ItemBusca[] = [];
+    let ativo = -1;
+    let pedido = 0;
+
+    const fechar = () => {
+      lista.hidden = true;
+      entrada.setAttribute('aria-expanded', 'false');
+      entrada.removeAttribute('aria-activedescendant');
+      ativo = -1;
+    };
+    const marcar = (i: number) => {
+      ativo = i;
+      lista.querySelectorAll('li').forEach((li, k) => li.setAttribute('aria-selected', String(k === i)));
+      if (i >= 0) {
+        entrada.setAttribute('aria-activedescendant', `${lista.id}-${i}`);
+        lista.children[i]?.scrollIntoView({ block: 'nearest' });
+      } else entrada.removeAttribute('aria-activedescendant');
+    };
+    const ir = (item: ItemBusca) => { location.href = item.u; };
+    const mostrar = (termo: string) => {
+      lista.replaceChildren();
+      if (termo.trim() === '') { fechar(); estado.textContent = ''; return; }
+      if (itens.length === 0) {
+        const li = document.createElement('li');
+        li.className = 'vazio';
+        li.setAttribute('role', 'option');
+        li.setAttribute('aria-disabled', 'true');
+        li.textContent = 'Nenhum município encontrado';
+        lista.append(li);
+        estado.textContent = 'Nenhum município encontrado';
+      } else {
+        itens.forEach((item, i) => {
+          const li = document.createElement('li');
+          li.id = `${lista.id}-${i}`;
+          li.setAttribute('role', 'option');
+          li.setAttribute('aria-selected', 'false');
+          const a = document.createElement('a');
+          a.href = item.u;
+          a.tabIndex = -1;
+          a.textContent = `${item.n}/${item.uf}`;
+          li.append(a);
+          li.addEventListener('mousedown', (e) => e.preventDefault()); // mantém o foco no campo
+          lista.append(li);
+        });
+        estado.textContent = `${itens.length} ${itens.length === 1 ? 'município encontrado' : 'municípios encontrados'}. Use as setas para escolher.`;
+      }
+      lista.hidden = false;
+      entrada.setAttribute('aria-expanded', 'true');
+      ativo = -1;
+    };
+    const atualizar = async () => {
+      const termo = entrada.value;
+      const meu = ++pedido;
+      try {
+        const dados = await carregar();
+        if (meu !== pedido) return;
+        itens = buscar(termo, dados);
+        mostrar(termo);
+      } catch {
+        estado.textContent = 'Não foi possível carregar a busca. Use a lista de municípios por estado.';
+      }
+    };
+
+    entrada.addEventListener('focus', () => { void carregar().catch(() => {}); });
+    entrada.addEventListener('input', () => { void atualizar(); });
+    entrada.addEventListener('keydown', (e) => {
+      const aberta = !lista.hidden && itens.length > 0;
+      if (e.key === 'ArrowDown') {
+        if (!aberta) { void atualizar(); return; }
+        e.preventDefault(); marcar((ativo + 1) % itens.length);
+      } else if (e.key === 'ArrowUp' && aberta) {
+        e.preventDefault(); marcar(ativo <= 0 ? itens.length - 1 : ativo - 1);
+      } else if (e.key === 'Escape') {
+        if (!lista.hidden) { e.preventDefault(); fechar(); }
+      } else if (e.key === 'Enter' && aberta) {
+        e.preventDefault(); ir(itens[ativo >= 0 ? ativo : 0]!);
+      }
+    });
+    form.addEventListener('submit', (e) => {
+      // Com JavaScript e resultados, vai direto ao município; sem resultados, cai na lista por estado.
+      if (itens.length > 0 && entrada.value.trim() !== '') { e.preventDefault(); ir(itens[ativo >= 0 ? ativo : 0]!); }
+    });
+    form.addEventListener('focusout', () => setTimeout(() => { if (!form.contains(document.activeElement)) fechar(); }, 0));
+  });
+</script>
 <style>
-  .busca-slot { max-width: 640px; border: 3px dashed var(--linha-forte); border-radius: var(--r-m); padding: 1rem 1.1rem; background: var(--cartao); }
-  .busca-titulo { margin: 0 0 0.25rem; font-weight: 700; }
-  .busca-aviso { margin: 0; color: var(--tinta-2); font-size: var(--t-xs); }
+  .busca-mun { position: relative; display: flex; flex-direction: column; gap: 0.5rem; max-width: 640px; }
+  .busca-mun label { font-weight: 700; font-size: var(--t-s); }
+  .campo { display: flex; background: var(--cartao); border: 3px solid var(--tinta); border-radius: var(--r-m); overflow: hidden; }
+  .campo:focus-within { outline: 3px solid var(--foco); outline-offset: 3px; }
+  input { flex: 1; min-width: 0; font: inherit; font-size: var(--t-m); padding: 0.85rem 1rem; border: 0; background: transparent; color: var(--tinta); }
+  input::placeholder { color: var(--tinta-3); }
+  input:focus { outline: none; }
+  button { font: inherit; font-weight: 700; background: var(--tinta); color: var(--inverso); border: 0; padding: 0 1.2rem; cursor: pointer; min-height: 52px; }
+  .lista { list-style: none; margin: 0; padding: 0; background: var(--cartao); border: 2px solid var(--tinta); border-radius: var(--r-m); overflow: hidden; }
+  .lista[hidden] { display: none; }
+  .lista li { border-top: 1px solid var(--linha); }
+  .lista li:first-child { border-top: 0; }
+  .lista a { display: block; padding: 0.75rem 1rem; min-height: 44px; text-decoration: none; color: var(--tinta); font-weight: 700; }
+  .lista li[aria-selected="true"] { background: var(--tinta); }
+  .lista li[aria-selected="true"] a { color: var(--inverso); }
+  .lista a:hover { text-decoration: underline; }
+  .vazio { padding: 0.75rem 1rem; color: var(--tinta-2); }
+  .compacta { max-width: none; width: 100%; gap: 0; }
+  .compacta input { font-size: var(--t-s); padding: 0.55rem 0.75rem; }
+  .compacta .campo { border-width: 2px; }
+  .compacta button { min-height: 44px; padding: 0 0.9rem; font-size: var(--t-xs); }
+  .compacta .lista { position: absolute; top: 100%; left: 0; right: 0; margin-top: 4px; z-index: 20; }
 </style>

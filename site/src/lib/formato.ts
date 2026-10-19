@@ -50,3 +50,39 @@ export function rotuloSituacao(c: Pick<VotoCandidato, 'situacao'>): string {
   if (c.situacao === 'não eleito') return 'não eleito';
   return '—';
 }
+
+/**
+ * Percentual de seções totalizadas para exibição geral: trunca em 2 casas e só mostra
+ * "100%" quando a totalização está completa (nunca arredonda 99,996 para 100).
+ */
+export function pctSecoes(n: number): string {
+  if (n >= 100) return '100%';
+  const t = Math.min(Math.floor(n * 100) / 100, 99.99);
+  return `${t.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%`;
+}
+
+const PARTICULAS = new Set([...MINUSCULAS, 'del']);
+const maiuscula1 = (s: string) => s.charAt(0).toLocaleUpperCase('pt-BR') + s.slice(1);
+
+/** Uma palavra já em minúsculas: "d'água" → "d'Água"; partícula fica minúscula (exceto a primeira). */
+function palavraProprio(p: string, primeira: boolean): string {
+  if (!primeira && PARTICULAS.has(p)) return p;
+  const apostrofo = /^(d)(['’])(.+)$/.exec(p);
+  if (apostrofo) return `${primeira ? 'D' : 'd'}${apostrofo[2]}${maiuscula1(apostrofo[3]!)}`;
+  return maiuscula1(p);
+}
+
+/**
+ * Nome de município do TSE (MAIÚSCULAS) em caixa de título, com partículas em minúsculas:
+ * "SÃO JOÃO D'ALIANÇA" → "São João d'Aliança".
+ */
+export function nomeProprio(nome: string): string {
+  return nome
+    .toLocaleLowerCase('pt-BR')
+    .split(' ')
+    .filter((p) => p !== '')
+    .map((palavra, i) =>
+      palavra.split('-').map((parte, j) => palavraProprio(parte, i === 0 && j === 0)).join('-'),
+    )
+    .join(' ');
+}

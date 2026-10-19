@@ -1,0 +1,29 @@
+---
+import Layout from '../../../components/Layout.astro';
+import { UFS, lerMunicipiosUF } from '../../../lib/dados';
+import { nomeProprio } from '../../../lib/formato';
+
+export function getStaticPaths() {
+  return UFS.map((uf) => ({ params: { uf: uf.toLowerCase() } }));
+}
+const uf = Astro.params.uf!;
+const lista = lerMunicipiosUF(uf)
+  .map((m) => ({ nome: nomeProprio(m.nome), url: `/eleicoes-2026/municipio/${uf}/${m.slug}/` }))
+  .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+const UF = uf.toUpperCase();
+---
+<Layout titulo={`Municípios de ${UF}`} descricao={`Todos os ${lista.length} municípios de ${UF}, em ordem alfabética, com o resultado de 2026 comparado com 2022.`}>
+  <div class="pagina wrap">
+    <p class="nota"><a href="/eleicoes-2026/municipios/">Municípios por estado</a></p>
+    <h1>Municípios de {UF}</h1>
+    <p class="lede">{lista.length} municípios, em ordem alfabética.</p>
+    <ul class="cidades">
+      {lista.map((c) => <li><a href={c.url}>{c.nome}</a></li>)}
+    </ul>
+  </div>
+</Layout>
+<style>
+  .cidades { list-style: none; padding: 0; columns: 14rem; column-gap: 1.5rem; max-width: none; }
+  .cidades li { max-width: none; margin: 0; break-inside: avoid; }
+  .cidades a { display: inline-block; padding: 0.35rem 0; min-height: 32px; }
+</style>

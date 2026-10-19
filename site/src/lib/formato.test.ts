@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { inteiro, nomeUF, pct, pctApuracao, pp, rotuloSituacao } from './formato';
+import { inteiro, nomeProprio, nomeUF, pct, pctApuracao, pctSecoes, pp, rotuloSituacao } from './formato';
 
 describe('formato', () => {
   test('pct usa vírgula e duas casas; null vira travessão', () => {
@@ -32,5 +32,28 @@ describe('formato', () => {
     expect(rotuloSituacao(c('eleito'))).toBe('eleito');
     expect(rotuloSituacao(c('não eleito'))).toBe('não eleito');
     expect(rotuloSituacao(c(''))).toBe('—');
+  });
+});
+
+describe('nomeProprio', () => {
+  test('capitaliza e mantém partículas em minúsculas', () => {
+    expect(nomeProprio('ANÁPOLIS')).toBe('Anápolis');
+    expect(nomeProprio('BOA ESPERANÇA DO NORTE')).toBe('Boa Esperança do Norte');
+  });
+  test("trata d' e hífen", () => {
+    expect(nomeProprio("SÃO JOÃO D'ALIANÇA")).toBe("São João d'Aliança");
+    expect(nomeProprio("PINGO-D'ÁGUA")).toBe("Pingo-d'Água");
+    expect(nomeProprio('SÃO JOÃO DEL-REI')).toBe('São João del-Rei');
+  });
+  test('é idempotente', () => {
+    expect(nomeProprio("São João d'Aliança")).toBe("São João d'Aliança");
+  });
+});
+
+describe('pctSecoes', () => {
+  test('trunca e só mostra 100% quando completo', () => {
+    expect(pctSecoes(99.999)).toBe('99,99%');
+    expect(pctSecoes(100)).toBe('100%');
+    expect(pctSecoes(87.456)).toBe('87,45%');
   });
 });

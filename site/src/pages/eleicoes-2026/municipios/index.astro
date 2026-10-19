@@ -1,0 +1,18 @@
+---
+import Layout from '../../../components/Layout.astro';
+import { UFS } from '../../../lib/dados';
+---
+<Layout titulo="Municípios por estado" descricao="Lista de todos os municípios do Brasil, por estado, com o resultado de 2026 comparado com 2022.">
+  <div class="pagina wrap">
+    <p class="nota"><a href="/eleicoes-2026">Eleições 2026</a></p>
+    <h1>Municípios por estado</h1>
+    <p class="lede">Escolha o estado e depois o município.</p>
+    <ul class="ufs">
+      {UFS.map((uf) => <li><a href={`/eleicoes-2026/municipios/${uf.toLowerCase()}/`}>{uf}</a></li>)}
+    </ul>
+  </div>
+</Layout>
+<style>
+  .ufs { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(4.5rem, 1fr)); gap: 0.5rem; max-width: 40rem; }
+  .ufs a { display: flex; align-items: center; justify-content: center; min-height: 48px; border: 2px solid var(--tinta); border-radius: var(--r-m); font-weight: 700; text-decoration: none; }
+</style>

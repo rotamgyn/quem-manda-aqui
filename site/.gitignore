@@ -24,3 +24,4 @@ pnpm-debug.log*
 .idea/
 # copiado de dados/ no prebuild (scripts/copiar-ranking.mjs)
 public/dados/
+public/busca-municipios.json

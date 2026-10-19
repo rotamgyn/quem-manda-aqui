@@ -95,8 +95,17 @@ export function lerComparacao(abr: string, cargo: Cargo): Comparacao {
   return c;
 }
 
+const cacheMunicipios = new Map<string, MunicipioComparado[]>();
+
+/** Municípios de uma UF; cada arquivo é lido uma única vez por build (cache do módulo). */
 export function lerMunicipiosUF(uf: string): MunicipioComparado[] {
-  return lerJson<{ municipios: MunicipioComparado[] }>('municipios', `${uf.toLowerCase()}.json`).municipios;
+  const chave = uf.toLowerCase();
+  let lista = cacheMunicipios.get(chave);
+  if (!lista) {
+    lista = lerJson<{ municipios: MunicipioComparado[] }>('municipios', `${chave}.json`).municipios;
+    cacheMunicipios.set(chave, lista);
+  }
+  return lista;
 }
 
 /** Ranking nacional de volatilidade (presidente), já ordenado do maior para o menor. */
