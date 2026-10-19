@@ -1,0 +1,45 @@
+name: Atualizar dados
+
+on:
+  workflow_dispatch:
+    inputs:
+      forcar:
+        description: "Baixar tudo de novo (ignora o cache)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  atualizar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Instalar Python 3.12
+        run: uv python install 3.12
+      - uses: actions/cache@v4
+        with:
+          path: .cache
+          key: cache-tse-${{ github.run_id }}
+          restore-keys: cache-tse-
+      - name: Gerar dados
+        run: |
+          if [ "${{ inputs.forcar }}" = "true" ]; then
+            uv run python -m qma_eleicoes gerar --forcar
+          else
+            uv run python -m qma_eleicoes gerar
+          fi
+      - name: Commit dos dados (se mudaram)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dados/
+          if git diff --cached --quiet; then
+            echo "Sem mudanças em dados/."
+          else
+            git commit -m "chore: atualiza dados das eleições"
+            git push origin HEAD:main
+          fi
