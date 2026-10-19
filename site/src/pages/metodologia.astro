@@ -13,7 +13,7 @@ const partes = (nota: string) => nota.split(URL_RE).filter((p) => p !== '');
     <p class="lede">Como chegamos a cada número que aparece no site.</p>
 
     <h2>Comparação por partido</h2>
-    <p>Para cada município e cargo (presidente e governador, 1º turno), somamos os votos dos candidatos de cada partido ou federação e dividimos pelos <strong>votos válidos</strong> (que não incluem brancos e nulos). O resultado é a porcentagem do partido naquele município. A diferença entre 2026 e 2022 é dada em <strong>pontos percentuais</strong> (p.p.): se um partido foi de 30% para 35%, a diferença é de +5 p.p.</p>
+    <p>Para cada município e cargo (presidente e governador, 1º turno), somamos os votos dos candidatos de cada partido (a sigla do próprio candidato, como consta no registro do TSE; partidos de uma mesma federação ou coligação não são somados) e dividimos pelos <strong>votos válidos</strong> (que não incluem brancos e nulos). O resultado é a porcentagem do partido naquele município. A diferença entre 2026 e 2022 é dada em <strong>pontos percentuais</strong> (p.p.): se um partido foi de 30% para 35%, a diferença é de +5 p.p.</p>
     <p>Um partido que só aparece em um dos anos fica com o outro lado em branco ("não disputou"), e não com 0%.</p>
 
     <h2 id="anulados">Votos anulados e diferença para o app do TSE</h2>
@@ -44,7 +44,12 @@ const partes = (nota: string) => nota.split(URL_RE).filter((p) => p !== '');
     </div>
 
     <h2>Conferência de totais</h2>
-    <p>Antes de publicar, somamos os votos de todos os municípios e comparamos com os totais oficiais de cada estado e do país divulgados pelo TSE. Se qualquer total divergir, os dados não são gerados e nada vai ao ar.</p>
+    <p>Antes de publicar, o programa que gera os dados faz estas verificações. Se qualquer uma falhar, por um único voto que seja, os dados não são gerados e nada vai ao ar.</p>
+    <ul>
+      <li><strong>2026:</strong> a soma dos municípios de cada estado é comparada com o arquivo oficial do TSE daquele estado, e a soma dos estados (e do exterior) com o arquivo oficial do Brasil, para presidente. São conferidos eleitores aptos, comparecimento, abstenção, brancos, nulos, votos válidos e os votos de cada candidato.</li>
+      <li><strong>2022:</strong> os arquivos de dados abertos do TSE vêm por município e zona; conferimos a consistência interna (a soma dos municípios bate com os totais de cada estado e do país calculados a partir dos mesmos arquivos) e comparamos os votos nacionais dos dois candidatos mais votados para presidente com os totais oficiais divulgados pelo TSE.</li>
+      <li><strong>Nos dois anos:</strong> em cada município, estado e no país, a soma dos votos dos candidatos válidos tem de ser exatamente igual ao total de votos válidos.</li>
+    </ul>
 
     <h2>Limitações</h2>
     <ul>
@@ -54,6 +59,7 @@ const partes = (nota: string) => nota.split(URL_RE).filter((p) => p !== '');
       <li>Porcentagens são arredondadas para duas casas; a soma pode não dar exatamente 100%.</li>
       <li>Brancos, nulos e abstenções ficam fora dos percentuais por partido.</li>
       <li>O voto no exterior entra apenas nos totais de presidente.</li>
+      <li>Em alguns locais (por exemplo, Manaus em 2022 e cidades do exterior), os dados do TSE trazem comparecimento mais abstenção diferente do total de eleitores aptos. Mostramos os números exatamente como o TSE publica, sem corrigir.</li>
     </ul>
   </div>
 </Layout>
